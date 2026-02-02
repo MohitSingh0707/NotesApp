@@ -1,0 +1,7 @@
+# Ignore build output directories
+bin/
+obj/
+appsettings.json
+appsettings.Development.json
+appsettings.Production.json
+firebase-service-account.json

@@ -1,0 +1,43 @@
+{
+  "version": 2,
+  "dgSpecHash": "wvRrFemZEfM=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\HP\\OneDrive\\Desktop\\NotesApp\\NotesApp Main\\NotesApp.Application\\NotesApp.Application.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\HP\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\fluentvalidation\\11.3.0\\fluentvalidation.11.3.0.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\hangfire\\1.8.22\\hangfire.1.8.22.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\hangfire.aspnetcore\\1.8.22\\hangfire.aspnetcore.1.8.22.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\hangfire.core\\1.8.22\\hangfire.core.1.8.22.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\hangfire.netcore\\1.8.22\\hangfire.netcore.1.8.22.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\hangfire.sqlserver\\1.8.22\\hangfire.sqlserver.1.8.22.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\microsoft.extensions.configuration.abstractions\\10.0.2\\microsoft.extensions.configuration.abstractions.10.0.2.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\newtonsoft.json\\11.0.1\\newtonsoft.json.11.0.1.nupkg.sha512"
+  ],
+  "logs": [
+    {
+      "code": "NU1510",
+      "level": "Warning",
+      "message": "PackageReference Microsoft.Extensions.Configuration.Abstractions will not be pruned. Consider removing this package from your dependencies, as it is likely unnecessary.",
+      "projectPath": "C:\\Users\\HP\\OneDrive\\Desktop\\NotesApp\\NotesApp Main\\NotesApp.Application\\NotesApp.Application.csproj",
+      "warningLevel": 1,
+      "filePath": "C:\\Users\\HP\\OneDrive\\Desktop\\NotesApp\\NotesApp Main\\NotesApp.Application\\NotesApp.Application.csproj",
+      "libraryId": "Microsoft.Extensions.Configuration.Abstractions",
+      "targetGraphs": [
+        "net10.0"
+      ]
+    },
+    {
+      "code": "NU1903",
+      "level": "Warning",
+      "message": "Package 'Newtonsoft.Json' 11.0.1 has a known high severity vulnerability, https://github.com/advisories/GHSA-5crp-9r3c-p9vr",
+      "projectPath": "C:\\Users\\HP\\OneDrive\\Desktop\\NotesApp\\NotesApp Main\\NotesApp.Application\\NotesApp.Application.csproj",
+      "warningLevel": 1,
+      "filePath": "C:\\Users\\HP\\OneDrive\\Desktop\\NotesApp\\NotesApp Main\\NotesApp.Application\\NotesApp.Application.csproj",
+      "libraryId": "Newtonsoft.Json",
+      "targetGraphs": [
+        "net10.0"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "dgSpecHash": "xvo/THyxFsA=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\HP\\OneDrive\\Desktop\\NotesApp\\Ai-Summary(Microservices)\\AI.Summary.Service\\AI.Summary.Service.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\HP\\.nuget\\packages\\microsoft.extensions.configuration\\10.0.2\\microsoft.extensions.configuration.10.0.2.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\microsoft.extensions.configuration.abstractions\\10.0.2\\microsoft.extensions.configuration.abstractions.10.0.2.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\microsoft.extensions.configuration.binder\\10.0.2\\microsoft.extensions.configuration.binder.10.0.2.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\microsoft.extensions.configuration.fileextensions\\10.0.2\\microsoft.extensions.configuration.fileextensions.10.0.2.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\microsoft.extensions.configuration.json\\10.0.2\\microsoft.extensions.configuration.json.10.0.2.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\microsoft.extensions.fileproviders.abstractions\\10.0.2\\microsoft.extensions.fileproviders.abstractions.10.0.2.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\microsoft.extensions.fileproviders.physical\\10.0.2\\microsoft.extensions.fileproviders.physical.10.0.2.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\microsoft.extensions.filesystemglobbing\\10.0.2\\microsoft.extensions.filesystemglobbing.10.0.2.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\microsoft.extensions.primitives\\10.0.2\\microsoft.extensions.primitives.10.0.2.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\rabbitmq.client\\7.2.0\\rabbitmq.client.7.2.0.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\system.threading.ratelimiting\\8.0.0\\system.threading.ratelimiting.8.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}
