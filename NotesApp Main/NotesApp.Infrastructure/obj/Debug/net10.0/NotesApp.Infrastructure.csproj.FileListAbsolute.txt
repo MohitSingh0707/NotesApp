@@ -36,3 +36,4 @@ C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Infrastructure\obj\
 C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Infrastructure\obj\Debug\net10.0\NotesApp.Infrastructure.pdb
 C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Infrastructure\obj\Debug\net10.0\NotesApp.Infrastructure.genruntimeconfig.cache
 C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Infrastructure\obj\Debug\net10.0\ref\NotesApp.Infrastructure.dll
+C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Infrastructure\obj\Debug\net10.0\NotesApp.Infrastructure.sourcelink.json

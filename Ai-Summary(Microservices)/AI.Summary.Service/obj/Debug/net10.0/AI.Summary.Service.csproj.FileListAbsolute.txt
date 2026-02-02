@@ -54,3 +54,4 @@ C:\Users\HP\OneDrive\Desktop\NotesApp\Ai-Summary(Microservices)\AI.Summary.Servi
 C:\Users\HP\OneDrive\Desktop\NotesApp\Ai-Summary(Microservices)\AI.Summary.Service\obj\Debug\net10.0\AI.Summary.Service.pdb
 C:\Users\HP\OneDrive\Desktop\NotesApp\Ai-Summary(Microservices)\AI.Summary.Service\obj\Debug\net10.0\AI.Summary.Service.genruntimeconfig.cache
 C:\Users\HP\OneDrive\Desktop\NotesApp\Ai-Summary(Microservices)\AI.Summary.Service\obj\Debug\net10.0\ref\AI.Summary.Service.dll
+C:\Users\HP\OneDrive\Desktop\NotesApp\Ai-Summary(Microservices)\AI.Summary.Service\obj\Debug\net10.0\AI.Summary.Service.sourcelink.json
