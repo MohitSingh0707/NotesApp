@@ -12,6 +12,7 @@ namespace NotesApp.Domain.Entities
         // Core
         public string Title { get; set; } = null!;
         public string? Content { get; set; }
+        public string? BackgroundColor { get; set; }
 
         // For list/search (safe)
         public string? Summary { get; set; }

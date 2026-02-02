@@ -10,6 +10,7 @@ namespace NotesApp.Application.DTOs.Notes
 
         // 🔒 List me content kabhi bhi nahi aayega
         public string? Content { get; set; }
+        public string? BackgroundColor { get; set; }
 
         public bool IsPasswordProtected { get; set; }
 

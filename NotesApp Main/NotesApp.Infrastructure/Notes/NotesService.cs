@@ -55,14 +55,20 @@ namespace NotesApp.Infrastructure.Services.Notes
             var cleanContent = request.Content?.Trim();
             if (cleanContent?.Length > 10000) cleanContent = cleanContent.Substring(0, 10000);
 
-            if (request.IsPasswordProtected &&
-                string.IsNullOrWhiteSpace(user.CommonPasswordHash))
+            if (request.IsPasswordProtected)
             {
-                if (string.IsNullOrWhiteSpace(request.Password))
-                    throw new ValidationException("Password required to lock for the first time");
+                 // 🚫 GUEST CHECK
+                if (user.IsGuest)
+                    throw new ValidationException("Guest users cannot password protect notes.");
 
-                user.CommonPasswordHash =
-                    BCrypt.Net.BCrypt.HashPassword(request.Password);
+                if (string.IsNullOrWhiteSpace(user.CommonPasswordHash))
+                {
+                    if (string.IsNullOrWhiteSpace(request.Password))
+                        throw new ValidationException("Password required to lock for the first time");
+
+                    user.CommonPasswordHash =
+                        BCrypt.Net.BCrypt.HashPassword(request.Password);
+                }
             }
 
             var note = new Note
@@ -117,7 +123,8 @@ namespace NotesApp.Infrastructure.Services.Notes
                 Title = note.Title,
                 Content = note.Content,
                 IsPasswordProtected = note.IsPasswordProtected,
-                IsLockedByTime = !hasAccess
+                IsLockedByTime = !hasAccess,
+                BackgroundColor = note.BackgroundColor
             };
         }
 
@@ -166,7 +173,8 @@ namespace NotesApp.Infrastructure.Services.Notes
                     Content = n.IsPasswordProtected ? null : n.Content,
                     IsPasswordProtected = n.IsPasswordProtected,
                     IsReminderSet = n.ReminderAt != null,
-                    UpdatedAt = n.UpdatedAt
+                    UpdatedAt = n.UpdatedAt,
+                    BackgroundColor = n.BackgroundColor
                 })
                 .ToListAsync();
 
@@ -260,6 +268,10 @@ namespace NotesApp.Infrastructure.Services.Notes
             // 🔒 Handle Lock State Changes
             if (request.IsPasswordProtected.HasValue && request.IsPasswordProtected != note.IsPasswordProtected)
             {
+                // 🚫 GUEST CHECK
+                if (request.IsPasswordProtected.Value && user.IsGuest)
+                    throw new ValidationException("Guest users cannot password protect notes.");
+
                 if (request.IsPasswordProtected.Value && string.IsNullOrEmpty(user.CommonPasswordHash))
                 {
                    if (string.IsNullOrEmpty(request.Password))
@@ -275,6 +287,7 @@ namespace NotesApp.Infrastructure.Services.Notes
             note.Content = cleanContent;
             note.FilePath = request.FilePath;
             note.ImagePath = request.ImagePath;
+            note.BackgroundColor = request.BackgroundColor;
             note.UpdatedAt = now;
 
             await _context.SaveChangesAsync();
@@ -328,6 +341,10 @@ namespace NotesApp.Infrastructure.Services.Notes
 
             if (request.IsPasswordProtected)
             {
+                // 🚫 GUEST CHECK
+                if (user.IsGuest)
+                    throw new ValidationException("Guest users cannot password protect notes.");
+
                 if (string.IsNullOrEmpty(user.CommonPasswordHash))
                 {
                     if (string.IsNullOrEmpty(request.Password))
