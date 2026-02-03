@@ -18,8 +18,8 @@ namespace NotesApp.Domain.Entities
         public string? Summary { get; set; }
 
         // Attachments
-        public string? FilePath { get; set; }
-        public string? ImagePath { get; set; }
+        public List<string>? FilePaths { get; set; }
+        public List<string>? ImagePaths { get; set; }
 
         // Reminder
         public DateTime? ReminderAt { get; set; }

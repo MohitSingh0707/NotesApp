@@ -2,11 +2,11 @@ namespace NotesApp.Application.DTOs.Notes
 {
     public class UpdateNoteRequest
     {
-        public string Title { get; set; } = null!;
+        public string? Title { get; set; }
         public string? Content { get; set; }
 
-        public string? FilePath { get; set; }
-        public string? ImagePath { get; set; }
+        public List<string>? FilePaths { get; set; }
+        public List<string>? ImagePaths { get; set; }
         public string? BackgroundColor { get; set; }
 
         // 🔐 OPTIONAL: only send when you actually want to lock/unlock

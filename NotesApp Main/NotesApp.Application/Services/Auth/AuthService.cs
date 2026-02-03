@@ -5,6 +5,7 @@ using NotesApp.Application.Interfaces.Auth;
 using NotesApp.Application.Interfaces.Common;
 using NotesApp.Application.Interfaces.Emails;
 using NotesApp.Domain.Entities;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -54,7 +55,7 @@ public class AuthService : IAuthService
         // 🧹 SANITIZE
         var firstName = request.FirstName.Trim();
         var lastName = request.LastName.Trim();
-        var userName = request.UserName.Trim().ToLower();
+        var userName = request.UserName.Trim();
 
         var user = new User
         {
@@ -64,7 +65,7 @@ public class AuthService : IAuthService
             UserName = userName,
             Email = request.Email.Trim().ToLower(),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-            ProfileImagePath = _defaultProfileImage,
+            ProfileImagePath = _s3BaseUrl + _defaultProfileImage,
             IsGuest = false,
             IsRegisteredWithGoogle = false,
             IsDeleted = false,
@@ -82,18 +83,18 @@ public class AuthService : IAuthService
         var user = await _userRepository
             .GetByEmailOrUserNameAsync(request.Identifier.Trim());
 
-        // 🔒 BLOCK DELETED USER
+        // BLOCK DELETED USER
         if (user == null || user.IsDeleted)
             throw new InvalidCredentialsException();
 
-        // 🔒 Google users cannot login via password
+        // Google users cannot login via password
         if (user.IsRegisteredWithGoogle)
             throw new InvalidCredentialsException("Please sign in using Google");
 
         bool isValid = false;
         bool isLegacy = false;
 
-        // 1️⃣ Try BCrypt (Modern)
+        // 1️ Try BCrypt (Modern)
         try 
         {
             if (!string.IsNullOrEmpty(user.PasswordHash) && user.PasswordHash.StartsWith("$2"))
@@ -117,13 +118,13 @@ public class AuthService : IAuthService
         if (!isValid)
             throw new InvalidCredentialsException();
 
-        // 🛡️ TRANSPARENT MIGRATION: Update to BCrypt
+        // TRANSPARENT MIGRATION: Update to BCrypt
         if (isLegacy)
         {
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
             user.UpdatedAt = DateTime.UtcNow;
             await _userRepository.UpdateAsync(user);
-            Console.WriteLine($"🛡️ User {user.Id} migrated to BCrypt on login.");
+            Console.WriteLine($" User {user.Id} migrated to BCrypt on login.");
         }
 
         return BuildAuthResponse(user);
@@ -137,7 +138,7 @@ public class AuthService : IAuthService
             Id = Guid.NewGuid(),
             IsGuest = true,
             IsDeleted = false,
-            ProfileImagePath = _defaultProfileImage,
+            ProfileImagePath = _s3BaseUrl + _defaultProfileImage,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -149,7 +150,7 @@ public class AuthService : IAuthService
             UserId = guestUser.Id,
             IsGuest = true,
             Token = _jwtTokenGenerator.GenerateToken(guestUser),
-            ProfileImageUrl = _s3BaseUrl + (string.IsNullOrWhiteSpace(guestUser.ProfileImagePath) ? _defaultProfileImage : guestUser.ProfileImagePath)
+            ProfileImageUrl = guestUser.ProfileImagePath ?? (_s3BaseUrl + _defaultProfileImage)
         };
     }
 
@@ -172,7 +173,7 @@ public class AuthService : IAuthService
         user.FirstName = request.FirstName.Trim();
         user.LastName = request.LastName.Trim();
         user.Email = request.Email.Trim().ToLower();
-        user.UserName = request.UserName.Trim().ToLower();
+        user.UserName = request.UserName.Trim();
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
         user.IsGuest = false;
         user.IsRegisteredWithGoogle = false;
@@ -259,6 +260,10 @@ public class AuthService : IAuthService
         if (!isValid)
             throw new InvalidPasswordException("Current password is incorrect");
 
+        // Check if new password is same as current password
+        if (request.CurrentPassword == request.NewPassword)
+            throw new ValidationException("New password must be different from current password");
+
         var newHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
         
         user.PasswordHash = newHash;
@@ -294,8 +299,10 @@ public class AuthService : IAuthService
     {
         var profilePath =
             string.IsNullOrWhiteSpace(user.ProfileImagePath)
-                ? _defaultProfileImage
-                : user.ProfileImagePath;
+                ? (_s3BaseUrl + _defaultProfileImage)
+                : user.ProfileImagePath.StartsWith("http")
+                    ? user.ProfileImagePath  // Already full URL
+                    : (_s3BaseUrl + user.ProfileImagePath);  // Convert relative to full URL
 
         return new AuthResponseDto
         {
@@ -305,7 +312,7 @@ public class AuthService : IAuthService
             FirstName = user.FirstName ?? "",
             LastName = user.LastName ?? "",
             Token = _jwtTokenGenerator.GenerateToken(user),
-            ProfileImageUrl = _s3BaseUrl + (profilePath.StartsWith("http") ? "" : profilePath)
+            ProfileImageUrl = profilePath
         };
     }
 

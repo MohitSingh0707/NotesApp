@@ -8,12 +8,11 @@ namespace NotesApp.Application.Validators.Notes
         public CreateNoteRequestValidator()
         {
             RuleFor(x => x.Title)
-                .NotEmpty()
                 .MaximumLength(200);
 
             RuleFor(x => x)
                 .Must(HaveContent)
-                .WithMessage("Note must have content, file, or image");
+                .WithMessage("Note must have at least a title, content, file, or image");
 
             RuleFor(x => x)
                 .Must(HaveValidTimeRange)
@@ -22,9 +21,10 @@ namespace NotesApp.Application.Validators.Notes
 
         private bool HaveContent(CreateNoteRequest request)
         {
-            return !string.IsNullOrWhiteSpace(request.Content)
-                || !string.IsNullOrWhiteSpace(request.FilePath)
-                || !string.IsNullOrWhiteSpace(request.ImagePath);
+            return !string.IsNullOrWhiteSpace(request.Title)
+                || !string.IsNullOrWhiteSpace(request.Content)
+                || (request.FilePaths != null && request.FilePaths.Any())
+                || (request.ImagePaths != null && request.ImagePaths.Any());
         }
 
         private bool HaveValidTimeRange(CreateNoteRequest request)

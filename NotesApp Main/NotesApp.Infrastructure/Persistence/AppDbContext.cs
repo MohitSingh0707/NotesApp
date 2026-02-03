@@ -83,6 +83,19 @@ namespace NotesApp.Infrastructure.Persistence
                         entity.Property(x => x.UpdatedAt).IsRequired();
 
                         entity.Property(x => x.UserId).IsRequired();
+
+                        // Store arrays as JSON
+                        entity.Property(x => x.FilePaths)
+                            .HasColumnType("nvarchar(max)")
+                            .HasConversion(
+                                v => v == null ? null : System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions)null),
+                                v => v == null ? null : System.Text.Json.JsonSerializer.Deserialize<List<string>>(v, (System.Text.Json.JsonSerializerOptions)null));
+
+                        entity.Property(x => x.ImagePaths)
+                            .HasColumnType("nvarchar(max)")
+                            .HasConversion(
+                                v => v == null ? null : System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions)null),
+                                v => v == null ? null : System.Text.Json.JsonSerializer.Deserialize<List<string>>(v, (System.Text.Json.JsonSerializerOptions)null));
                   });
 
                   // ================= NOTIFICATION =================

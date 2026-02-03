@@ -12,6 +12,8 @@ using NotesApp.Application.Interfaces.Notifications;
 using NotesApp.Application.Interfaces.Push;
 using NotesApp.Application.Interfaces.Reminders;
 using NotesApp.Application.Interfaces.Emails;
+using NotesApp.Application.Interfaces.Users;
+using NotesApp.Application.Interfaces.Files;
 
 using NotesApp.Application.Services.Auth;
 using NotesApp.Application.Services.Users;
@@ -24,6 +26,7 @@ using NotesApp.Infrastructure.Persistence.Repositories.Push;
 using NotesApp.Infrastructure.Persistence.Repositories.Reminders;
 using NotesApp.Infrastructure.Services.Notes;
 using NotesApp.Infrastructure.BackgroundJobs;
+using NotesApp.Infrastructure.Files;
 
 namespace NotesApp.Infrastructure
 {
@@ -57,6 +60,7 @@ namespace NotesApp.Infrastructure
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<INoteService, NoteService>();
+            services.AddScoped<IFileStorageService, S3FileStorageService>();
 
             // Added Missing Service
             services.AddScoped<INotificationService, NotesApp.Infrastructure.Notifications.NotificationService>();

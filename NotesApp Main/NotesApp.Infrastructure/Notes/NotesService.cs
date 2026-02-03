@@ -42,15 +42,12 @@ namespace NotesApp.Infrastructure.Services.Notes
         // ================= CREATE =================
         public async Task<Guid> CreateAsync(CreateNoteRequest request, Guid userId)
         {
-            if (string.IsNullOrWhiteSpace(request.Title))
-                throw new ValidationException("Title is required");
-
             var user = await _context.Users.FindAsync(userId)
                 ?? throw new NotFoundException("User not found");
 
             // 🧹 SANITIZE
-            var cleanTitle = request.Title.Trim();
-            if (cleanTitle.Length > 200) cleanTitle = cleanTitle.Substring(0, 200);
+            var cleanTitle = request.Title?.Trim();
+            if (cleanTitle?.Length > 200) cleanTitle = cleanTitle.Substring(0, 200);
             
             var cleanContent = request.Content?.Trim();
             if (cleanContent?.Length > 10000) cleanContent = cleanContent.Substring(0, 10000);
@@ -77,6 +74,9 @@ namespace NotesApp.Infrastructure.Services.Notes
                 UserId = userId,
                 Title = cleanTitle,
                 Content = cleanContent,
+                BackgroundColor = request.BackgroundColor,
+                FilePaths = request.FilePaths,
+                ImagePaths = request.ImagePaths,
                 IsPasswordProtected = request.IsPasswordProtected,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -122,6 +122,8 @@ namespace NotesApp.Infrastructure.Services.Notes
                 Id = note.Id,
                 Title = note.Title,
                 Content = note.Content,
+                FilePaths = note.FilePaths,
+                ImagePaths = note.ImagePaths,
                 IsPasswordProtected = note.IsPasswordProtected,
                 IsLockedByTime = !hasAccess,
                 BackgroundColor = note.BackgroundColor
@@ -153,7 +155,7 @@ namespace NotesApp.Infrastructure.Services.Notes
             {
                 search = search.Trim().ToLower();
                 query = query.Where(n =>
-                    n.Title.ToLower().Contains(search) || 
+                    (n.Title != null && n.Title.ToLower().Contains(search)) || 
                     (n.Content != null && n.Content.ToLower().Contains(search)));
             }
 
@@ -171,6 +173,8 @@ namespace NotesApp.Infrastructure.Services.Notes
                     Title = n.Title,
                     // Security: Do not send content in list if protected
                     Content = n.IsPasswordProtected ? null : n.Content,
+                    FilePaths = n.FilePaths,
+                    ImagePaths = n.ImagePaths,
                     IsPasswordProtected = n.IsPasswordProtected,
                     IsReminderSet = n.ReminderAt != null,
                     UpdatedAt = n.UpdatedAt,
@@ -231,9 +235,6 @@ namespace NotesApp.Infrastructure.Services.Notes
             UpdateNoteRequest request,
             Guid userId)
         {
-            if (string.IsNullOrWhiteSpace(request.Title))
-                throw new ValidationException("Title is required");
-
             var note = await _context.Notes
                 .FirstOrDefaultAsync(n =>
                     n.Id == noteId &&
@@ -259,8 +260,8 @@ namespace NotesApp.Infrastructure.Services.Notes
                 throw new UnauthorizedAccessException("Protected note is locked. Unlock to edit.");
 
             // 🧹 SANITIZE
-            var cleanTitle = request.Title.Trim();
-            if (cleanTitle.Length > 200) cleanTitle = cleanTitle.Substring(0, 200);
+            var cleanTitle = request.Title?.Trim();
+            if (cleanTitle?.Length > 200) cleanTitle = cleanTitle.Substring(0, 200);
             
             var cleanContent = request.Content?.Trim();
             if (cleanContent?.Length > 10000) cleanContent = cleanContent.Substring(0, 10000);
@@ -285,8 +286,8 @@ namespace NotesApp.Infrastructure.Services.Notes
 
             note.Title = cleanTitle;
             note.Content = cleanContent;
-            note.FilePath = request.FilePath;
-            note.ImagePath = request.ImagePath;
+            note.FilePaths = request.FilePaths;
+            note.ImagePaths = request.ImagePaths;
             note.BackgroundColor = request.BackgroundColor;
             note.UpdatedAt = now;
 

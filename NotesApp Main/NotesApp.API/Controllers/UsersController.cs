@@ -4,6 +4,7 @@ using System.Security.Claims;
 using NotesApp.Application.Common;
 using NotesApp.Application.DTOs.Auth;
 using NotesApp.Application.Interfaces.Common;
+using NotesApp.Application.Interfaces.Users;
 
 [Authorize]
 [ApiController]
@@ -87,6 +88,24 @@ public class UsersController : ControllerBase
         return Ok(SuccessResponse.Create<object>(
             data: null,
             message: "Common password updated successfully"
+        ));
+    }
+
+    // ================= UPLOAD PROFILE IMAGE =================
+    [HttpPost("me/profile-image")]
+    public async Task<IActionResult> UploadProfileImage(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest(FailureResponse.Create<object>("No file uploaded", 400));
+
+        var userId = GetUserId();
+
+        using var stream = file.OpenReadStream();
+        var fullUrl = await _userService.UploadProfileImageAsync(userId, stream, file.ContentType);
+
+        return Ok(SuccessResponse.Create(
+            data: new { profileImageUrl = fullUrl },
+            message: "Profile image uploaded successfully"
         ));
     }
 }

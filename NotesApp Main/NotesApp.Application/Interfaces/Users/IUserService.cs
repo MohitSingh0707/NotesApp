@@ -1,6 +1,6 @@
 using NotesApp.Application.DTOs.Auth;
 
-namespace NotesApp.Application.Interfaces.Common;
+namespace NotesApp.Application.Interfaces.Users;
 
 public interface IUserService
 {
@@ -12,4 +12,6 @@ public interface IUserService
         Guid userId,
         string oldPassword,
         string newPassword);
+
+    Task<string> UploadProfileImageAsync(Guid userId, Stream fileStream, string contentType);
 }

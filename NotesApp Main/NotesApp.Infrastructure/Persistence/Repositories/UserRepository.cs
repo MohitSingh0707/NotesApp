@@ -26,8 +26,10 @@ public class UserRepository : IUserRepository
 
     public async Task<User?> GetByEmailOrUserNameAsync(string identifier)
     {
+        // Email is case-insensitive, Username is case-sensitive
         return await _context.Users.FirstOrDefaultAsync(u =>
-            u.Email == identifier || u.UserName == identifier);
+            u.Email == identifier || 
+            EF.Functions.Collate(u.UserName, "SQL_Latin1_General_CP1_CS_AS") == EF.Functions.Collate(identifier, "SQL_Latin1_General_CP1_CS_AS"));
     }
 
     public async Task<User?> GetByIdAsync(Guid id)
