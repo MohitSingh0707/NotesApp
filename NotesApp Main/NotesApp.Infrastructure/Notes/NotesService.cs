@@ -54,7 +54,7 @@ namespace NotesApp.Infrastructure.Services.Notes
 
             if (request.IsPasswordProtected)
             {
-                 // 🚫 GUEST CHECK
+                 //  GUEST CHECK
                 if (user.IsGuest)
                     throw new ValidationException("Guest users cannot password protect notes.");
 
@@ -126,7 +126,8 @@ namespace NotesApp.Infrastructure.Services.Notes
                 ImagePaths = note.ImagePaths,
                 IsPasswordProtected = note.IsPasswordProtected,
                 IsLockedByTime = !hasAccess,
-                BackgroundColor = note.BackgroundColor
+                BackgroundColor = note.BackgroundColor,
+                IsReminderSet = await _context.Reminders.AnyAsync(r => r.NoteId == note.Id && !r.IsCompleted)
             };
         }
 
@@ -150,7 +151,7 @@ namespace NotesApp.Infrastructure.Services.Notes
                 .AsNoTracking()
                 .Where(n => n.UserId == userId && !n.IsDeleted);
 
-            // 🔍 FILTER (DB LEVEL)
+            // FILTER (DB LEVEL)
             if (!string.IsNullOrWhiteSpace(search))
             {
                 search = search.Trim().ToLower();
@@ -159,10 +160,10 @@ namespace NotesApp.Infrastructure.Services.Notes
                     (n.Content != null && n.Content.ToLower().Contains(search)));
             }
 
-            // 🔢 TOTAL COUNT
+            //  TOTAL COUNT 
             var totalCount = await query.CountAsync();
 
-            // 🔢 PAGINATION (DB LEVEL)
+            // PAGINATION (DB LEVEL)
             var items = await query
                 .OrderByDescending(n => n.UpdatedAt)
                 .Skip((pageNumber - 1) * pageSize)
@@ -176,7 +177,7 @@ namespace NotesApp.Infrastructure.Services.Notes
                     FilePaths = n.FilePaths,
                     ImagePaths = n.ImagePaths,
                     IsPasswordProtected = n.IsPasswordProtected,
-                    IsReminderSet = n.ReminderAt != null,
+                    IsReminderSet = _context.Reminders.Any(r => r.NoteId == n.Id && !r.IsCompleted),
                     UpdatedAt = n.UpdatedAt,
                     BackgroundColor = n.BackgroundColor
                 })

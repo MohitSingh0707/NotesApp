@@ -13,5 +13,6 @@ namespace NotesApp.Application.DTOs.Notes
 
         public bool IsPasswordProtected { get; set; }
         public bool IsLockedByTime { get; set; }
+        public bool IsReminderSet { get; set; }
     }
 }
