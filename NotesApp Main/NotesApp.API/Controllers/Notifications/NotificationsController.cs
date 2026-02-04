@@ -106,7 +106,6 @@ namespace NotesApp.API.Controllers.Notifications
             ));
         }
 
-        // 3️ MARK single notification as read
         [HttpPut("{id:guid}/read")]
         public async Task<IActionResult> MarkAsRead(Guid id)
         {
@@ -114,8 +113,12 @@ namespace NotesApp.API.Controllers.Notifications
 
             await _notificationRepository.MarkAsReadAsync(id, userId);
 
-            return Ok(SuccessResponse.Create<object>(
-                data: null,
+            // Fetch updated count
+            var notifications = await _notificationRepository.GetByUserAsync(userId);
+            var unreadCount = notifications.Count(n => !n.IsRead);
+
+            return Ok(SuccessResponse.Create(
+                data: new { unreadCount },
                 message: "Notification marked as read"
             ));
         }
@@ -134,8 +137,9 @@ namespace NotesApp.API.Controllers.Notifications
                 await _notificationRepository.MarkAsReadAsync(notification.Id, userId);
             }
 
-            return Ok(SuccessResponse.Create<object>(
-                data: null,
+            // Return updated count (should be 0 since all are marked as read)
+            return Ok(SuccessResponse.Create(
+                data: new { unreadCount = 0 },
                 message: "All notifications marked as read"
             ));
         }
