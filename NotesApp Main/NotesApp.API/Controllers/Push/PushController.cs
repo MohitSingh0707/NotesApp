@@ -32,6 +32,28 @@ namespace NotesApp.API.Controllers.Push
                 ));
             }
 
+            // Validate token length (FCM tokens are typically 140-200 characters)
+            if (request.Token.Length < 10 || request.Token.Length > 250)
+            {
+                return BadRequest(FailureResponse.Create<object>(
+                    message: "Invalid device token length",
+                    statusCode: 400,
+                    errors: new List<string> { $"Token length: {request.Token.Length}, Expected: 10-250 characters" }
+                ));
+            }
+
+            // Validate platform
+            var validPlatforms = new[] { "Android", "iOS", "Web" };
+            if (!string.IsNullOrWhiteSpace(request.Platform) && 
+                !validPlatforms.Contains(request.Platform, StringComparer.OrdinalIgnoreCase))
+            {
+                return BadRequest(FailureResponse.Create<object>(
+                    message: "Invalid platform",
+                    statusCode: 400,
+                    errors: new List<string> { $"Platform must be one of: {string.Join(", ", validPlatforms)}" }
+                ));
+            }
+
             var userId = User.GetUserId();
 
             var existing =

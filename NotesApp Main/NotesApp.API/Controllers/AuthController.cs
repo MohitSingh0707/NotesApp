@@ -4,6 +4,7 @@ using System.Security.Claims;
 using NotesApp.Application.Common;
 using NotesApp.Application.DTOs.Auth;
 using NotesApp.Application.Interfaces.Auth;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace NotesApp.API.Controllers;
 
@@ -29,6 +30,7 @@ public class AuthController : ControllerBase
     }
 
     // ---------------- REGISTER ----------------
+    [EnableRateLimiting("LoginPolicy")]
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequestDto request)
     {
@@ -41,6 +43,7 @@ public class AuthController : ControllerBase
     }
 
     // ---------------- LOGIN ----------------
+    [EnableRateLimiting("LoginPolicy")]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
     {
@@ -121,7 +124,7 @@ public class AuthController : ControllerBase
         if (isGoogleUser)
         {
             return BadRequest(FailureResponse.Create<object>(
-                message: "This account uses Google Sign-In. Password reset is not available.",
+                message: "This account uses Google Sign-In or Gmail. Password reset is not available.",
                 statusCode: 400,
                 errors: new List<string>
                 {

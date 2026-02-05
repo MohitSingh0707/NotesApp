@@ -13,5 +13,6 @@ namespace NotesApp.Application.Interfaces.Reminders
         Task UpdateAsync(Reminder reminder);
         Task DeleteByNoteIdAsync(Guid noteId, Guid userId);
         Task<Reminder?> GetByNoteIdAsync(Guid noteId, Guid userId);
+        Task DeleteAllByUserAsync(Guid userId);
     }
 }

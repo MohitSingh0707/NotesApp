@@ -7,5 +7,6 @@ namespace NotesApp.Application.Interfaces.Notifications
         Task AddAsync(Notification notification);
         Task<List<Notification>> GetByUserAsync(Guid userId);
         Task MarkAsReadAsync(Guid notificationId, Guid userId);
+        Task DeleteAllByUserAsync(Guid userId);
     }
 }

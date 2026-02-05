@@ -46,16 +46,39 @@ public class AuthService : IAuthService
     // ================= REGISTER =================
     public async Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request)
     {
-        if (await _userRepository.EmailExistsAsync(request.Email))
+        // 🧹 SANITIZE & VALIDATE
+        var firstName = request.FirstName?.Trim() ?? "";
+        var lastName = request.LastName?.Trim() ?? "";
+        var userName = request.UserName?.Trim() ?? "";
+        var email = request.Email?.Trim().ToLower() ?? "";
+
+        // Validate not empty after trim
+        if (string.IsNullOrWhiteSpace(firstName))
+            throw new ValidationException("First name cannot be empty");
+        if (string.IsNullOrWhiteSpace(lastName))
+            throw new ValidationException("Last name cannot be empty");
+        if (string.IsNullOrWhiteSpace(userName))
+            throw new ValidationException("Username cannot be empty");
+        if (string.IsNullOrWhiteSpace(email))
+            throw new ValidationException("Email cannot be empty");
+
+        // Validate length limits
+        if (firstName.Length > 50)
+            throw new ValidationException("First name cannot exceed 50 characters");
+        if (lastName.Length > 50)
+            throw new ValidationException("Last name cannot exceed 50 characters");
+        if (userName.Length > 20)
+            throw new ValidationException("Username cannot exceed 20 characters");
+
+        // Basic XSS prevention - reject HTML tags
+        if (ContainsHtmlTags(firstName) || ContainsHtmlTags(lastName) || ContainsHtmlTags(userName))
+            throw new ValidationException("Names and username cannot contain HTML or script tags");
+
+        if (await _userRepository.EmailExistsAsync(email))
             throw new EmailAlreadyExistsException();
 
-        if (await _userRepository.UserNameExistsAsync(request.UserName))
+        if (await _userRepository.UserNameExistsAsync(userName))
             throw new UsernameAlreadyExistsException();
-
-        // 🧹 SANITIZE
-        var firstName = request.FirstName.Trim();
-        var lastName = request.LastName.Trim();
-        var userName = request.UserName.Trim();
 
         var user = new User
         {
@@ -63,7 +86,7 @@ public class AuthService : IAuthService
             FirstName = firstName,
             LastName = lastName,
             UserName = userName,
-            Email = request.Email.Trim().ToLower(),
+            Email = email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             ProfileImagePath = _s3BaseUrl + _defaultProfileImage,
             IsGuest = false,
@@ -192,9 +215,16 @@ public class AuthService : IAuthService
         if (user == null || user.IsDeleted)
             throw new UserNotFoundException();
 
-        if (user.IsRegisteredWithGoogle)
-            throw new InvalidOperationException(
-                "This account uses Google Sign-In. Password reset is not available.");
+        // 🛑 Block Google/Gmail users from resetting password
+        bool isGoogleManaged = user.IsRegisteredWithGoogle || 
+                               user.PasswordHash == null || 
+                               (user.Email != null && user.Email.EndsWith("@gmail.com", StringComparison.OrdinalIgnoreCase));
+
+        if (isGoogleManaged)
+        {
+            throw new ValidationException(
+                "Aapka account Google Sign-In se juda hua hai. Password reset yahan se possible nahi hai. Kripya 'Login with Google' ka use karein.");
+        }
 
         var jwtToken = _jwtTokenGenerator.GenerateToken(user);
 
@@ -225,8 +255,9 @@ public class AuthService : IAuthService
     {
         var user = await _userRepository.GetByIdAsync(userId);
 
-        if (user == null || user.IsDeleted || user.IsGuest || user.IsRegisteredWithGoogle)
-            throw new InvalidUserException();
+        if (user == null || user.IsDeleted || user.IsGuest || 
+            user.IsRegisteredWithGoogle || (user.Email != null && user.Email.EndsWith("@gmail.com", StringComparison.OrdinalIgnoreCase)))
+            throw new ValidationException("Password reset is not available for Google/Gmail accounts.");
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
         user.PasswordResetToken = null;
@@ -243,8 +274,9 @@ public class AuthService : IAuthService
     {
         var user = await _userRepository.GetByIdAsync(userId);
 
-        if (user == null || user.IsDeleted || user.IsGuest || user.IsRegisteredWithGoogle)
-            throw new InvalidUserException();
+        if (user == null || user.IsDeleted || user.IsGuest || 
+            user.IsRegisteredWithGoogle || (user.Email != null && user.Email.EndsWith("@gmail.com", StringComparison.OrdinalIgnoreCase)))
+            throw new ValidationException("Accounts with Google Sign-In or Gmail cannot change password here. Please manage your account via Google.");
 
         // Check Legacy or BCrypt
         bool isValid = false;
@@ -276,7 +308,11 @@ public class AuthService : IAuthService
     public async Task<bool> IsGoogleRegisteredUserAsync(string email)
     {
         var user = await _userRepository.GetByEmailOrUserNameAsync(email.Trim());
-        return user != null && !user.IsDeleted && user.IsRegisteredWithGoogle;
+        if (user == null || user.IsDeleted) return false;
+        
+        return user.IsRegisteredWithGoogle || 
+               user.PasswordHash == null ||
+               (user.Email != null && user.Email.EndsWith("@gmail.com", StringComparison.OrdinalIgnoreCase));
     }
 
     public async Task MarkAsGoogleUserAsync(Guid userId)
@@ -322,6 +358,15 @@ public class AuthService : IAuthService
         using var sha = SHA256.Create();
         return Convert.ToBase64String(
             sha.ComputeHash(Encoding.UTF8.GetBytes(password)));
+    }
+
+    // ================= XSS PREVENTION HELPER =================
+    private static bool ContainsHtmlTags(string input)
+    {
+        if (string.IsNullOrEmpty(input)) return false;
+        return input.Contains("<") || input.Contains(">") || 
+               input.Contains("script", StringComparison.OrdinalIgnoreCase) ||
+               input.Contains("javascript:", StringComparison.OrdinalIgnoreCase);
     }
 
     // ================= EMAIL TEMPLATE =================

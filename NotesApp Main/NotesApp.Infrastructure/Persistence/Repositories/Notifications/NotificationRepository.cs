@@ -41,5 +41,18 @@ namespace NotesApp.Infrastructure.Persistence.Repositories.Notifications
             notification.IsRead = true;
             await _context.SaveChangesAsync();
         }
+
+        public async Task DeleteAllByUserAsync(Guid userId)
+        {
+            var notifications = await _context.Notifications
+                .Where(n => n.UserId == userId)
+                .ToListAsync();
+
+            if (notifications.Any())
+            {
+                _context.Notifications.RemoveRange(notifications);
+                await _context.SaveChangesAsync();
+            }
+        }
     }
 }

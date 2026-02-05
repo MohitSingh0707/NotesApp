@@ -7,4 +7,6 @@ public class UserProfileDto
     public string Email { get; set; } = "";
     public string ProfileImageUrl { get; set; } = "";
     public bool IsCommonPasswordAvailable { get; set; }
+    public bool IsNotesUnlocked { get; set; }
+    public long RemainingAccessSeconds { get; set; }
 }

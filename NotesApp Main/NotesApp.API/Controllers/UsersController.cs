@@ -95,8 +95,37 @@ public class UsersController : ControllerBase
     [HttpPost("me/profile-image")]
     public async Task<IActionResult> UploadProfileImage(IFormFile file)
     {
+        // Validate file exists
         if (file == null || file.Length == 0)
             return BadRequest(FailureResponse.Create<object>("No file uploaded", 400));
+
+        // Validate file size (5MB limit)
+        const long maxFileSize = 5 * 1024 * 1024; // 5MB
+        if (file.Length > maxFileSize)
+            return BadRequest(FailureResponse.Create<object>(
+                message: "File size exceeds 5MB limit",
+                statusCode: 400,
+                errors: new List<string> { $"File size: {file.Length / 1024 / 1024}MB, Maximum allowed: 5MB" }
+            ));
+
+        // Validate content type (images only)
+        var allowedContentTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp" };
+        if (!allowedContentTypes.Contains(file.ContentType.ToLower()))
+            return BadRequest(FailureResponse.Create<object>(
+                message: "Invalid file type",
+                statusCode: 400,
+                errors: new List<string> { $"Only image files are allowed (JPEG, PNG, GIF, WebP). Received: {file.ContentType}" }
+            ));
+
+        // Validate file extension
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+        var fileExtension = Path.GetExtension(file.FileName)?.ToLower();
+        if (string.IsNullOrEmpty(fileExtension) || !allowedExtensions.Contains(fileExtension))
+            return BadRequest(FailureResponse.Create<object>(
+                message: "Invalid file extension",
+                statusCode: 400,
+                errors: new List<string> { $"Only image file extensions are allowed (.jpg, .jpeg, .png, .gif, .webp)" }
+            ));
 
         var userId = GetUserId();
 

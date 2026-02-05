@@ -59,18 +59,15 @@ namespace NotesApp.API.Controllers
             ));
         }
 
-        // ================= GET BY ID (OPEN NOTE) =================
+        // ================= GET BY ID =================
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetNoteById(
-            Guid id,
-            [FromQuery] string? password)
+        public async Task<IActionResult> GetNoteById(Guid id)
         {
             var userId = GetUserId();
 
             var note = await _noteService.GetByIdAsync(
                 id,
-                userId,
-                password
+                userId
             );
 
             return Ok(SuccessResponse.Create(
@@ -86,16 +83,30 @@ namespace NotesApp.API.Controllers
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
         {
+            // Validate pagination parameters before calling service
+            if (pageNumber < 1)
+                return BadRequest(FailureResponse.Create<object>(
+                    message: "Page number must be at least 1",
+                    statusCode: 400));
+
+            if (pageSize < 1 || pageSize > 100)
+                return BadRequest(FailureResponse.Create<object>(
+                    message: "Page size must be between 1 and 100",
+                    statusCode: 400));
+
             var userId = GetUserId();
 
             var result = await _noteService.GetListAsync(
                 userId,
                 search,
-                pageNumber,
-                pageSize
+                1, // Always first page for now if pagination field is removed
+                1000 // Large page size to act as "all"
             );
 
-            return Ok(result);
+            return Ok(SuccessResponse.Create(
+                data: result.Items,
+                message: "Notes fetched successfully"
+            ));
         }
 
         // ================= UPDATE =================
@@ -131,7 +142,7 @@ namespace NotesApp.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteNote(
             Guid id,
-            [FromQuery] string? password)
+            [FromBody] DeleteNoteRequest? request)
         {
             var userId = GetUserId();
 
@@ -148,7 +159,7 @@ namespace NotesApp.API.Controllers
 
             await _noteService.DeleteAsync(
                 id,
-                password,
+                request?.Password,
                 userId
             );
 
@@ -157,16 +168,13 @@ namespace NotesApp.API.Controllers
                 message: "Note deleted successfully"
             ));
         }
-        // =================Unlock by note id=================
-        [HttpPost("{id}/unlock")]
-        public async Task<IActionResult> UnlockProtectedNoteById(
-     Guid id,
-     [FromBody] UnlockNoteRequest request)
+        // ================= UNLOCK (GLOBAL) =================
+        [HttpPost("unlock")]
+        public async Task<IActionResult> UnlockProtectedNotes([FromBody] UnlockNoteRequest request)
         {
             var userId = GetUserId();
 
             await _noteService.UnlockProtectedNotesAsync(
-                id,
                 request.Password,
                 request.UnlockMinutes,
                 userId
@@ -178,16 +186,16 @@ namespace NotesApp.API.Controllers
             ));
         }
 
-        // ================= LOCK NOTE =================
-        [HttpPost("{id}/lock")]
-        public async Task<IActionResult> LockNote(Guid id, [FromBody] LockNoteRequest request)
+        // ================= LOCK (GLOBAL) =================
+        [HttpPost("lock")]
+        public async Task<IActionResult> LockNotes()
         {
             var userId = GetUserId();
-            await _noteService.LockNoteAsync(id, request, userId);
+            await _noteService.LockProtectedNotesAsync(userId);
 
             return Ok(SuccessResponse.Create<object>(
                 data: null,
-                message: request.IsPasswordProtected ? "Note locked successfully" : "Note unlocked successfully"
+                message: "All protected notes have been locked"
             ));
         }
 

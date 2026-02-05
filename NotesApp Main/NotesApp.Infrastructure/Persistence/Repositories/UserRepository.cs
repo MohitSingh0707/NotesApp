@@ -21,15 +21,17 @@ public class UserRepository : IUserRepository
 
     public async Task<bool> UserNameExistsAsync(string userName)
     {
-        return await _context.Users.AnyAsync(x => x.UserName == userName);
+        var lowerUserName = userName.ToLower();
+        return await _context.Users.AnyAsync(x => x.UserName!.ToLower() == lowerUserName);
     }
 
     public async Task<User?> GetByEmailOrUserNameAsync(string identifier)
     {
-        // Email is case-insensitive, Username is case-sensitive
+        // Both Email and Username should be case-insensitive for login
+        var lowerIdentifier = identifier.ToLower();
         return await _context.Users.FirstOrDefaultAsync(u =>
-            u.Email == identifier || 
-            EF.Functions.Collate(u.UserName, "SQL_Latin1_General_CP1_CS_AS") == EF.Functions.Collate(identifier, "SQL_Latin1_General_CP1_CS_AS"));
+            u.Email!.ToLower() == lowerIdentifier || 
+            u.UserName!.ToLower() == lowerIdentifier);
     }
 
     public async Task<User?> GetByIdAsync(Guid id)

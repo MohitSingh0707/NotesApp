@@ -8,7 +8,7 @@ public static class RabbitMqConnection
     {
         var factory = new ConnectionFactory
         {
-            HostName = "localhost"
+            HostName = "172.26.96.1"
         };
 
         return await factory.CreateConnectionAsync();

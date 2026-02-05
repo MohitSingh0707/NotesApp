@@ -33,7 +33,7 @@ namespace NotesApp.Application.Services.Reminders
 
             await _repository.AddAsync(reminder);
 
-            // ✅ Schedule REAL reminder job
+            // Schedule REAL reminder job
             var jobId = BackgroundJob.Schedule<IReminderJob>(
                 job => job.ExecuteAsync(reminder.Id),
                 reminder.RemindAt

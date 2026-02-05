@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("NotesApp.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+68d01df47524f67af387cf98bb7293352cabf112")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f7521cdafbba14f8b0f4b34c1597c27588ff346c")]
 [assembly: System.Reflection.AssemblyProductAttribute("NotesApp.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("NotesApp.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

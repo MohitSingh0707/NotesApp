@@ -29,3 +29,6 @@ C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Application\obj\Deb
 C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Application\obj\Debug\net10.0\NotesApp.Application.pdb
 C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Application\obj\Debug\net10.0\ref\NotesApp.Application.dll
 C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Application\obj\Debug\net10.0\NotesApp.Application.sourcelink.json
+C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.API\temp_build_out\NotesApp.Application.deps.json
+C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.API\temp_build_out\NotesApp.Application.dll
+C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.API\temp_build_out\NotesApp.Application.pdb

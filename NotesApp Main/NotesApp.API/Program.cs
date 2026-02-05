@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
+using NotesApp.Infrastructure.Persistence;
 using FluentValidation.AspNetCore;
 using FluentValidation;
 using NotesApp.Infrastructure;
@@ -11,7 +13,8 @@ using NotesApp.API.Middleware;
 using Hangfire;
 using Hangfire.SqlServer;
 using NotesApp.Infrastructure.SignalR.Hubs;
-
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.SignalR;
 using NotesApp.API.SignalR;
 using NotesApp.Application.Interfaces.Notifications;
@@ -19,7 +22,6 @@ using RabbitMQ.Client;
 using NotesApp.Application.Interfaces.Emails;
 using NotesApp.Application.Interfaces.Reminders;
 using NotesApp.Application.Services.Reminders;
-using NotesApp.Infrastructure.Persistence.Repositories.Reminders;
 using NotesApp.Infrastructure.Persistence.Repositories.Reminders;
 using NotesApp.Application.Interfaces.Common;
 using NotesApp.Infrastructure.Persistence.Repositories;
@@ -50,7 +52,22 @@ builder.Services.AddScoped<IReminderService, ReminderService>();
 // builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
-
+// --------------------
+// RateLimiting
+// --------------------
+builder.Services.AddRateLimiter(options => {
+    options.AddPolicy("LoginPolicy",context =>
+    RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+        factory: _ => new FixedWindowRateLimiterOptions{
+            PermitLimit = 5,
+            Window = TimeSpan.FromSeconds(1),
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0
+        }
+    ));
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
 
 
 // --------------------
@@ -140,16 +157,35 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+// --------------------
+// Automatic Migrations
+// --------------------
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+        if (context.Database.GetPendingMigrations().Any())
+        {
+            context.Database.Migrate();
+            Console.WriteLine("✅ Database migrations applied successfully");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Error applying migrations: {ex.Message}");
+    }
+}
+
 app.UseMiddleware<ExceptionMiddleware>();
 
 // --------------------
 // Middleware Pipeline
 // --------------------
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 
 
@@ -157,6 +193,9 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
+
+app.UseRouting();
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();

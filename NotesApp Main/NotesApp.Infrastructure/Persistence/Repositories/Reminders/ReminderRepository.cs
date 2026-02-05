@@ -61,5 +61,18 @@ namespace NotesApp.Infrastructure.Persistence.Repositories.Reminders
             return await _context.Reminders
                 .FirstOrDefaultAsync(r => r.NoteId == noteId && r.UserId == userId);
         }
+
+        public async Task DeleteAllByUserAsync(Guid userId)
+        {
+            var reminders = await _context.Reminders
+                .Where(r => r.UserId == userId)
+                .ToListAsync();
+
+            if (reminders.Any())
+            {
+                _context.Reminders.RemoveRange(reminders);
+                await _context.SaveChangesAsync();
+            }
+        }
     }
 }

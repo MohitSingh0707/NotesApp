@@ -39,6 +39,12 @@ public class UserService : IUserService
                 ? user.ProfileImagePath  // Already full URL
                 : (_s3BaseUrl + user.ProfileImagePath);  // Convert relative to full URL
 
+        var now = DateTime.UtcNow;
+        var isUnlocked = user.AccessibleTill.HasValue && user.AccessibleTill.Value > now;
+        var remainingSeconds = user.AccessibleTill.HasValue 
+            ? (long)Math.Max(0, (user.AccessibleTill.Value - now).TotalSeconds)
+            : 0;
+
         return new UserProfileDto
         {
             UserId = user.Id,
@@ -47,7 +53,9 @@ public class UserService : IUserService
             UserName = user.UserName ?? "",
             Email = user.Email ?? "",
             ProfileImageUrl = profilePath,
-            IsCommonPasswordAvailable = !string.IsNullOrWhiteSpace(user.CommonPasswordHash)
+            IsCommonPasswordAvailable = !string.IsNullOrWhiteSpace(user.CommonPasswordHash),
+            IsNotesUnlocked = isUnlocked,
+            RemainingAccessSeconds = remainingSeconds
         };
     }
 

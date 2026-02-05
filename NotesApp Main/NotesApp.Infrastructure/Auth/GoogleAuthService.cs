@@ -71,11 +71,24 @@ public class GoogleAuthService : IGoogleAuthService
                     _config["AWS:DefaultProfileImage"]
                     ?? "profile-images/default.png",
 
+                IsRegisteredWithGoogle = true,
+                PasswordHash = null, // External accounts don't have local passwords
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
 
             await _userRepository.AddAsync(user);
+        }
+        else
+        {
+            // 🔥 Sync flag for existing users who switch to Google
+            if (!user.IsRegisteredWithGoogle || user.PasswordHash != null)
+            {
+                user.IsRegisteredWithGoogle = true;
+                user.PasswordHash = null; 
+                user.UpdatedAt = DateTime.UtcNow;
+                await _userRepository.UpdateAsync(user);
+            }
         }
 
         return user;

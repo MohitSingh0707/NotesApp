@@ -61,8 +61,7 @@ namespace NotesApp.Application.Interfaces.Notes
         // ================= READ =================
         Task<NoteResponse> GetByIdAsync(
             Guid noteId,
-            Guid userId,
-            string? password
+            Guid userId
         );
 
         Task<PagedResponse<NoteListItemResponse>> GetListAsync(
@@ -86,20 +85,17 @@ namespace NotesApp.Application.Interfaces.Notes
             Guid userId
         );
 
-        // ================= LOCK =================
-        Task LockNoteAsync(
-            Guid noteId,
-            LockNoteRequest request,
+        // ================= LOCK (USER LEVEL) =================
+        Task LockProtectedNotesAsync(
             Guid userId
         );
 
-        // ================= UNLOCK (NOTE LEVEL) =================
+        // ================= UNLOCK (USER LEVEL) =================
         Task UnlockProtectedNotesAsync(
-    Guid noteId,
-    string password,
-    int unlockMinutes,
-    Guid userId
-);
+            string password,
+            int unlockMinutes,
+            Guid userId
+        );
 
 
         // ================= ACCESS CHECK (NOTE LEVEL) =================

@@ -45,12 +45,52 @@ namespace NotesApp.Infrastructure.Services.Notes
             var user = await _context.Users.FindAsync(userId)
                 ?? throw new NotFoundException("User not found");
 
-            // 🧹 SANITIZE
+            // 🧹 SANITIZE & VALIDATE
             var cleanTitle = request.Title?.Trim();
-            if (cleanTitle?.Length > 200) cleanTitle = cleanTitle.Substring(0, 200);
-            
             var cleanContent = request.Content?.Trim();
-            if (cleanContent?.Length > 10000) cleanContent = cleanContent.Substring(0, 10000);
+
+            // Validate array sizes
+            if (request.FilePaths != null && request.FilePaths.Count > 10)
+                throw new ValidationException("Maximum 10 files allowed per note");
+            
+            if (request.ImagePaths != null && request.ImagePaths.Count > 10)
+                throw new ValidationException("Maximum 10 images allowed per note");
+
+            // Validate URLs for file and image paths
+            if (request.FilePaths != null)
+            {
+                foreach (var path in request.FilePaths)
+                {
+                    if (!IsValidS3Path(path))
+                        throw new ValidationException($"Invalid file path: {path}");
+                }
+            }
+
+            if (request.ImagePaths != null)
+            {
+                foreach (var path in request.ImagePaths)
+                {
+                    if (!IsValidS3Path(path))
+                        throw new ValidationException($"Invalid image path: {path}");
+                }
+            }
+
+            // XSS validation removed - allowing HTML content in notes
+            
+            // Track if truncation occurred
+            bool wasTruncated = false;
+            
+            if (cleanTitle?.Length > 200)
+            {
+                cleanTitle = cleanTitle.Substring(0, 200);
+                wasTruncated = true;
+            }
+            
+            if (cleanContent?.Length > 10000)
+            {
+                cleanContent = cleanContent.Substring(0, 10000);
+                wasTruncated = true;
+            }
 
             if (request.IsPasswordProtected)
             {
@@ -84,14 +124,15 @@ namespace NotesApp.Infrastructure.Services.Notes
 
             _context.Notes.Add(note);
             await _context.SaveChangesAsync();
+            
+            // Note: Caller should check if truncation occurred (could add metadata to response)
             return note.Id;
         }
 
         // ================= GET BY ID =================
         public async Task<NoteResponse> GetByIdAsync(
             Guid noteId,
-            Guid userId,
-            string? password)
+            Guid userId)
         {
             var note = await _context.Notes
                 .AsNoTracking()
@@ -114,20 +155,47 @@ namespace NotesApp.Infrastructure.Services.Notes
                 now >= user.AccessibleFrom.Value &&
                 now <= user.AccessibleTill.Value;
 
-            if (note.IsPasswordProtected && !hasAccess)
-                throw new UnauthorizedAccessException("Protected note is locked. Please unlock first.");
+            // Debug logging
+            Console.WriteLine($"[GetByIdAsync] NoteId: {noteId}, IsPasswordProtected: {note.IsPasswordProtected}, HasAccess: {hasAccess}");
+            if (note.IsPasswordProtected)
+            {
+                Console.WriteLine($"[GetByIdAsync] AccessibleFrom: {user.AccessibleFrom}, AccessibleTill: {user.AccessibleTill}, Now: {now}");
+            }
+
+            // 🔔 Automatically mark notifications as read and reminders as completed when note is opened
+            var unreadNotifications = await _context.Notifications
+                .Where(notif => notif.NoteId == note.Id && !notif.IsRead)
+                .ToListAsync();
+
+            if (unreadNotifications.Any())
+            {
+                foreach (var notif in unreadNotifications)
+                {
+                    notif.IsRead = true;
+                }
+
+                var reminder = await _context.Reminders
+                    .FirstOrDefaultAsync(r => r.NoteId == note.Id && !r.IsCompleted);
+                
+                if (reminder != null)
+                {
+                    reminder.IsCompleted = true;
+                }
+
+                await _context.SaveChangesAsync();
+            }
 
             return new NoteResponse
             {
                 Id = note.Id,
                 Title = note.Title,
-                Content = note.Content,
+                Content = note.Content, // ALWAYS return content
                 FilePaths = note.FilePaths,
                 ImagePaths = note.ImagePaths,
                 IsPasswordProtected = note.IsPasswordProtected,
-                IsLockedByTime = !hasAccess,
+                IsLockedByTime = note.IsPasswordProtected && !hasAccess, // Flag for lock status
                 BackgroundColor = note.BackgroundColor,
-                IsReminderSet = await _context.Reminders.AnyAsync(r => r.NoteId == note.Id && !r.IsCompleted)
+                IsReminderSet = await _context.Reminders.AnyAsync(r => r.NoteId == note.Id && !r.IsCompleted && !r.IsCancelled)
             };
         }
 
@@ -156,8 +224,7 @@ namespace NotesApp.Infrastructure.Services.Notes
             {
                 search = search.Trim().ToLower();
                 query = query.Where(n =>
-                    (n.Title != null && n.Title.ToLower().Contains(search)) || 
-                    (n.Content != null && n.Content.ToLower().Contains(search)));
+                    n.Title != null && n.Title.ToLower().Contains(search));
             }
 
             //  TOTAL COUNT 
@@ -177,7 +244,9 @@ namespace NotesApp.Infrastructure.Services.Notes
                     FilePaths = n.FilePaths,
                     ImagePaths = n.ImagePaths,
                     IsPasswordProtected = n.IsPasswordProtected,
-                    IsReminderSet = _context.Reminders.Any(r => r.NoteId == n.Id && !r.IsCompleted),
+                    // Reminder is "set" if an active (future or fired-but-unread) reminder exists.
+                    // When user reads notification, IsCompleted becomes true and this becomes false.
+                    IsReminderSet = _context.Reminders.Any(r => r.NoteId == n.Id && !r.IsCompleted && !r.IsCancelled),
                     UpdatedAt = n.UpdatedAt,
                     BackgroundColor = n.BackgroundColor
                 })
@@ -195,21 +264,10 @@ namespace NotesApp.Infrastructure.Services.Notes
 
         // ================= UNLOCK =================
         public async Task UnlockProtectedNotesAsync(
-            Guid noteId,
             string password,
             int unlockMinutes,
             Guid userId)
         {
-            var note = await _context.Notes
-                .FirstOrDefaultAsync(n =>
-                    n.Id == noteId &&
-                    n.UserId == userId &&
-                    !n.IsDeleted)
-                ?? throw new NotFoundException("Note not found");
-
-            if (!note.IsPasswordProtected)
-                throw new ValidationException("This note is not password protected");
-
             var user = await _context.Users.FindAsync(userId)
                 ?? throw new NotFoundException("User not found");
 
@@ -329,39 +387,15 @@ namespace NotesApp.Infrastructure.Services.Notes
             await _context.SaveChangesAsync();
         }
 
-        public async Task LockNoteAsync(Guid noteId, LockNoteRequest request, Guid userId)
+        public async Task LockProtectedNotesAsync(Guid userId)
         {
-             var note = await _context.Notes
-                .FirstOrDefaultAsync(n =>
-                    n.Id == noteId &&
-                    n.UserId == userId &&
-                    !n.IsDeleted)
-                ?? throw new NotFoundException("Note not found");
-
             var user = await _context.Users.FindAsync(userId)
                 ?? throw new NotFoundException("User not found");
 
-            if (request.IsPasswordProtected)
-            {
-                // 🚫 GUEST CHECK
-                if (user.IsGuest)
-                    throw new ValidationException("Guest users cannot password protect notes.");
+            user.AccessibleFrom = null;
+            user.AccessibleTill = null;
+            user.UpdatedAt = DateTime.UtcNow;
 
-                if (string.IsNullOrEmpty(user.CommonPasswordHash))
-                {
-                    if (string.IsNullOrEmpty(request.Password))
-                        throw new ValidationException("Common password setup required to lock notes");
-
-                    user.CommonPasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
-                }
-                note.IsPasswordProtected = true;
-            }
-            else
-            {
-                note.IsPasswordProtected = false;
-            }
-
-            note.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
         }
 
@@ -408,6 +442,29 @@ namespace NotesApp.Infrastructure.Services.Notes
             return await _context.Notes
                 .AsNoTracking()
                 .FirstOrDefaultAsync(n => n.Id == noteId && !n.IsDeleted);
+        }
+
+        // ================= VALIDATION HELPERS =================
+        private static bool IsValidS3Path(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return false;
+            
+            // Must start with http:// or https://
+            if (!path.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && 
+                !path.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            // Basic URL validation
+            return Uri.TryCreate(path, UriKind.Absolute, out var uri) && 
+                   (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+        }
+
+        private static bool ContainsHtmlTags(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return false;
+            return input.Contains("<") || input.Contains(">") || 
+                   input.Contains("script", StringComparison.OrdinalIgnoreCase) ||
+                   input.Contains("javascript:", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

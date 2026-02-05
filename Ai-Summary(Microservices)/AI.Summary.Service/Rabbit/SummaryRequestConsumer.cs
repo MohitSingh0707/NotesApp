@@ -12,7 +12,7 @@ public class SummaryRequestConsumer
     {
         var factory = new ConnectionFactory
         {
-            HostName = "localhost",
+            HostName = "172.26.96.1",
             UserName = "guest",
             Password = "guest"
         };

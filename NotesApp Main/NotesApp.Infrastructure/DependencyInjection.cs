@@ -81,11 +81,14 @@ namespace NotesApp.Infrastructure
 
             services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
 
-            services.AddSingleton<IConnection>(_ =>
+            services.AddSingleton<IConnection>(sp =>
             {
+                var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<RabbitMqOptions>>().Value;
                 var factory = new ConnectionFactory
                 {
-                    HostName = "localhost"
+                    HostName = options.Host,
+                    UserName = options.Username,
+                    Password = options.Password
                 };
                 return factory.CreateConnectionAsync().Result;
             });

@@ -26,5 +26,11 @@ namespace NotesApp.Application.Common.Extensions
 
             return email;
         }
+
+        public static bool IsGuest(this ClaimsPrincipal user)
+        {
+            var isGuestClaim = user.FindFirstValue("isGuest");
+            return bool.TryParse(isGuestClaim, out var isGuest) && isGuest;
+        }
     }
 }
