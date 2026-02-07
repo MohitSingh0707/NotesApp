@@ -4,6 +4,7 @@ using NotesApp.Application.DTOs.Auth;
 using NotesApp.Application.Interfaces.Auth;
 using NotesApp.Application.Interfaces.Common;
 using NotesApp.Application.Interfaces.Emails;
+using NotesApp.Application.Interfaces.Push;
 using NotesApp.Domain.Entities;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography;
@@ -16,6 +17,7 @@ public class AuthService : IAuthService
     private readonly IUserRepository _userRepository;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
     private readonly IEmailService _emailService;
+    private readonly IDeviceTokenRepository _deviceTokenRepository;
 
     private readonly string _defaultProfileImage;
     private readonly string _s3BaseUrl;
@@ -25,11 +27,13 @@ public class AuthService : IAuthService
         IUserRepository userRepository,
         IJwtTokenGenerator jwtTokenGenerator,
         IEmailService emailService,
+        IDeviceTokenRepository deviceTokenRepository,
         IConfiguration config)
     {
         _userRepository = userRepository;
         _jwtTokenGenerator = jwtTokenGenerator;
         _emailService = emailService;
+        _deviceTokenRepository = deviceTokenRepository;
 
         _defaultProfileImage =
             config["AWS:DefaultProfileImage"] ?? "profile-images/default.png";
@@ -96,8 +100,12 @@ public class AuthService : IAuthService
             UpdatedAt = DateTime.UtcNow
         };
 
-        await _userRepository.AddAsync(user);
-        return BuildAuthResponse(user);
+        if (!string.IsNullOrEmpty(request.FcmToken) && !string.IsNullOrEmpty(request.Platform))
+        {
+            await RegisterDeviceTokenAsync(user.Id, request.FcmToken, request.Platform);
+        }
+
+        return await BuildAuthResponse(user);
     }
 
     // ================= LOGIN =================
@@ -150,7 +158,12 @@ public class AuthService : IAuthService
             Console.WriteLine($" User {user.Id} migrated to BCrypt on login.");
         }
 
-        return BuildAuthResponse(user);
+        if (!string.IsNullOrEmpty(request.FcmToken) && !string.IsNullOrEmpty(request.Platform))
+        {
+            await RegisterDeviceTokenAsync(user.Id, request.FcmToken, request.Platform);
+        }
+
+        return await BuildAuthResponse(user);
     }
 
     // ================= GUEST LOGIN =================
@@ -173,7 +186,10 @@ public class AuthService : IAuthService
             UserId = guestUser.Id,
             IsGuest = true,
             Token = _jwtTokenGenerator.GenerateToken(guestUser),
-            ProfileImageUrl = guestUser.ProfileImagePath ?? (_s3BaseUrl + _defaultProfileImage)
+            ProfileImageUrl = guestUser.ProfileImagePath ?? (_s3BaseUrl + _defaultProfileImage),
+            IsNotesUnlocked = false,
+            RemainingAccessSeconds = 0,
+            HasPushToken = false
         };
     }
 
@@ -203,7 +219,7 @@ public class AuthService : IAuthService
         user.UpdatedAt = DateTime.UtcNow;
 
         await _userRepository.UpdateAsync(user);
-        return BuildAuthResponse(user);
+        return await BuildAuthResponse(user);
     }
 
     // ================= FORGOT PASSWORD =================
@@ -331,7 +347,7 @@ public class AuthService : IAuthService
     }
 
     // ================= RESPONSE BUILDER =================
-    private AuthResponseDto BuildAuthResponse(User user)
+    private async Task<AuthResponseDto> BuildAuthResponse(User user)
     {
         var profilePath =
             string.IsNullOrWhiteSpace(user.ProfileImagePath)
@@ -339,6 +355,14 @@ public class AuthService : IAuthService
                 : user.ProfileImagePath.StartsWith("http")
                     ? user.ProfileImagePath  // Already full URL
                     : (_s3BaseUrl + user.ProfileImagePath);  // Convert relative to full URL
+
+        var now = DateTime.UtcNow;
+        var isUnlocked = user.AccessibleTill.HasValue && user.AccessibleTill > now;
+        var remainingSeconds = isUnlocked ? (long)(user.AccessibleTill!.Value - now).TotalSeconds : 0;
+        
+        // CHECK PUSH STATUS
+        var tokens = await _deviceTokenRepository.GetByUserAsync(user.Id);
+        var hasPushToken = tokens != null && tokens.Any();
 
         return new AuthResponseDto
         {
@@ -348,7 +372,11 @@ public class AuthService : IAuthService
             FirstName = user.FirstName ?? "",
             LastName = user.LastName ?? "",
             Token = _jwtTokenGenerator.GenerateToken(user),
-            ProfileImageUrl = profilePath
+            ProfileImageUrl = profilePath,
+            IsCommonPasswordSet = !string.IsNullOrEmpty(user.CommonPasswordHash),
+            IsNotesUnlocked = isUnlocked,
+            RemainingAccessSeconds = remainingSeconds,
+            HasPushToken = hasPushToken
         };
     }
 
@@ -434,5 +462,28 @@ public class AuthService : IAuthService
     </table>
 </body>
 </html>";
+    }
+
+    public async Task RegisterDeviceTokenAsync(Guid userId, string token, string platform)
+    {
+        var existing = await _deviceTokenRepository.GetAsync(userId, token);
+        if (existing == null)
+        {
+            await _deviceTokenRepository.AddAsync(new DeviceToken
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                Token = token,
+                Platform = platform.ToLower(),
+                CreatedAt = DateTime.UtcNow
+            });
+            Console.WriteLine($"📱 FCM: Token registered for user {userId} during auth flow.");
+        }
+    }
+
+    public async Task<bool> IsPushTokenRegisteredAsync(Guid userId)
+    {
+        var tokens = await _deviceTokenRepository.GetByUserAsync(userId);
+        return tokens != null && tokens.Any();
     }
 }

@@ -10,6 +10,7 @@ public class S3FileStorageService : IFileStorageService
 {
     private readonly IAmazonS3 _s3;
     private readonly string _bucket;
+    private readonly string _s3BaseUrl;
 
     public S3FileStorageService(
         IAmazonS3 s3,
@@ -17,16 +18,43 @@ public class S3FileStorageService : IFileStorageService
     {
         _s3 = s3;
         _bucket = config["AWS:BucketName"]!;
+        _s3BaseUrl = config["AWS:S3BaseUrl"] ?? throw new Exception("AWS:S3BaseUrl is missing");
     }
 
-    public Task<string> SaveFileAsync(IFormFile file)
+    public async Task<string> SaveFileAsync(IFormFile file)
     {
-        throw new NotImplementedException();
+        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+        var key = $"notes-files/{fileName}";
+
+        using var stream = file.OpenReadStream();
+        var request = new PutObjectRequest
+        {
+            BucketName = _bucket,
+            Key = key,
+            InputStream = stream,
+            ContentType = file.ContentType
+        };
+
+        await _s3.PutObjectAsync(request);
+        return GenerateFullUrl(key);
     }
 
-    public Task<string> SaveImageAsync(IFormFile image)
+    public async Task<string> SaveImageAsync(IFormFile image)
     {
-        throw new NotImplementedException();
+        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
+        var key = $"notes-images/{fileName}";
+
+        using var stream = image.OpenReadStream();
+        var request = new PutObjectRequest
+        {
+            BucketName = _bucket,
+            Key = key,
+            InputStream = stream,
+            ContentType = image.ContentType
+        };
+
+        await _s3.PutObjectAsync(request);
+        return GenerateFullUrl(key);
     }
 
     // ✅ ONLY METHOD REQUIRED BY INTERFACE
@@ -47,6 +75,13 @@ public class S3FileStorageService : IFileStorageService
 
         await _s3.PutObjectAsync(request);
 
-        return key; // relative path only
+        return GenerateFullUrl(key);
+    }
+
+    private string GenerateFullUrl(string key)
+    {
+        var baseUrl = _s3BaseUrl.TrimEnd('/');
+        var relativePath = key.TrimStart('/');
+        return $"{baseUrl}/{relativePath}";
     }
 }

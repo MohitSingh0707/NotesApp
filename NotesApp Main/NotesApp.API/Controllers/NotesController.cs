@@ -6,6 +6,7 @@ using NotesApp.Application.Interfaces.Notes;
 using NotesApp.Application.Common;
 using NotesApp.Application.Common.Extensions;
 using NotesApp.Application.Interfaces.Reminders;
+using NotesApp.Application.Interfaces.Files;
 using Hangfire;
 
 namespace NotesApp.API.Controllers
@@ -17,13 +18,16 @@ namespace NotesApp.API.Controllers
     {
         private readonly INoteService _noteService;
         private readonly IReminderRepository _reminderRepository;
+        private readonly IFileStorageService _fileStorageService;
 
         public NotesController(
             INoteService noteService,
-            IReminderRepository reminderRepository)
+            IReminderRepository reminderRepository,
+            IFileStorageService fileStorageService)
         {
             _noteService = noteService;
             _reminderRepository = reminderRepository;
+            _fileStorageService = fileStorageService;
         }
 
         // ================= HELPER =================
@@ -39,24 +43,13 @@ namespace NotesApp.API.Controllers
 
         // ================= CREATE =================
         [HttpPost]
-        public async Task<IActionResult> CreateNote([FromBody] CreateNoteRequest? request)
+        public async Task<IActionResult> CreateNote([FromBody] CreateNoteRequest request)
         {
-            if (request == null)
-            {
-                return BadRequest(FailureResponse.Create<object>(
-                    message: "Request body is required",
-                    statusCode: 400,
-                    errors: new List<string> { "Request body cannot be null" }
-                ));
-            }
-
             var userId = GetUserId();
             var noteId = await _noteService.CreateAsync(request, userId);
 
-            return Ok(SuccessResponse.Create(
-                data: new { noteId },
-                message: "Note created successfully"
-            ));
+            return CreatedAtAction(nameof(GetNoteById), new { id = noteId }, 
+                SuccessResponse.Create(new { id = noteId }, "Note created successfully"));
         }
 
         // ================= GET BY ID =================
@@ -111,31 +104,11 @@ namespace NotesApp.API.Controllers
 
         // ================= UPDATE =================
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateNote(
-            Guid id,
-            [FromBody] UpdateNoteRequest? request)
+        public async Task<IActionResult> UpdateNote(Guid id, [FromBody] UpdateNoteRequest request)
         {
-            if (request == null)
-            {
-                return BadRequest(FailureResponse.Create<object>(
-                    message: "Request body is required",
-                    statusCode: 400,
-                    errors: new List<string> { "Request body cannot be null" }
-                ));
-            }
-
-            var userId = GetUserId();
-
-            await _noteService.UpdateAsync(
-                id,
-                request,
-                userId
-            );
-
-            return Ok(SuccessResponse.Create<object>(
-                data: null,
-                message: "Note updated successfully"
-            ));
+            var userId = User.GetUserId();
+            await _noteService.UpdateAsync(id, request, userId);
+            return Ok(SuccessResponse.Create<object>(null, "Note updated successfully"));
         }
 
         // ================= DELETE =================
@@ -207,7 +180,7 @@ namespace NotesApp.API.Controllers
         {
             await _noteService.GenerateSummaryAsync(id);
 
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < 20; i++)
             {
                 await Task.Delay(500);
 
@@ -226,6 +199,43 @@ namespace NotesApp.API.Controllers
                 message = "Summary is being generated",
                 status = "pending"
             });
+        }
+
+        // ================= UPLOADS =================
+        [HttpPost("upload-image")]
+        public async Task<IActionResult> UploadImage(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest(FailureResponse.Create<object>("No file uploaded", 400));
+
+            if (!file.ContentType.StartsWith("image/"))
+                return BadRequest(FailureResponse.Create<object>("Only image files are allowed", 400));
+
+            var path = await _fileStorageService.SaveImageAsync(file);
+
+            return Ok(SuccessResponse.Create(new { path }, "Image uploaded successfully"));
+        }
+
+        [HttpPost("upload-file")]
+        public async Task<IActionResult> UploadFile(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest(FailureResponse.Create<object>("No file uploaded", 400));
+
+            // Logic to handle both images and general files in the same endpoint
+            string path;
+            if (file.ContentType.StartsWith("image/"))
+            {
+                // If it's an image, route to images folder
+                path = await _fileStorageService.SaveImageAsync(file);
+            }
+            else
+            {
+                // Otherwise route to general files folder
+                path = await _fileStorageService.SaveFileAsync(file);
+            }
+
+            return Ok(SuccessResponse.Create(new { path }, "File uploaded successfully"));
         }
     }
 }

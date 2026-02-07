@@ -17,6 +17,6 @@ namespace NotesApp.Application.DTOs.Reminders
         [Required]
         public DateTime RemindAt { get; set; } // User time
 
-        public ReminderType Type { get; set; } = ReminderType.InApp | ReminderType.Email; // Default to InApp + Email if not specified
+        public ReminderType Type { get; set; } = ReminderType.InApp | ReminderType.Email | ReminderType.Push; // Default to all three channels if not specified
     }
 }

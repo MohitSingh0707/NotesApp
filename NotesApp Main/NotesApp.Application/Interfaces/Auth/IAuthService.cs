@@ -16,5 +16,7 @@ namespace NotesApp.Application.Interfaces.Auth
         // ✅ ADD THESE (FOR GOOGLE FLOW)
         Task<bool> IsGoogleRegisteredUserAsync(string email);
         Task MarkAsGoogleUserAsync(Guid userId);
+        Task RegisterDeviceTokenAsync(Guid userId, string token, string platform);
+        Task<bool> IsPushTokenRegisteredAsync(Guid userId);
     }
 }

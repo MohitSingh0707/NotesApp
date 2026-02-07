@@ -9,4 +9,5 @@ public class UserProfileDto
     public bool IsCommonPasswordAvailable { get; set; }
     public bool IsNotesUnlocked { get; set; }
     public long RemainingAccessSeconds { get; set; }
+    public bool HasPushToken { get; set; }
 }

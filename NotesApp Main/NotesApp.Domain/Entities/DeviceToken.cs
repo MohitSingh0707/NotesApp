@@ -12,5 +12,8 @@ namespace NotesApp.Domain.Entities
         // web / android / ios
 
         public DateTime CreatedAt { get; set; }
+
+        // ---------------- RELATIONSHIPS ----------------
+        public virtual User User { get; set; } = null!;
     }
 }

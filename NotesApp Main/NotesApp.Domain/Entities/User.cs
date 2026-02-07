@@ -23,10 +23,10 @@ public class User
 
     public bool IsDeleted { get; set; }
 
-    // 🔥 ONE TIME SET (protected notes password)
+    // ONE TIME SET (protected notes password)
     public string? CommonPasswordHash { get; set; }
 
-    // ✅ NEW: USER-LEVEL ACCESS WINDOW (ALL protected notes)
+    //NEW: USER-LEVEL ACCESS WINDOW (ALL protected notes)
     public DateTime? AccessibleFrom { get; set; }
     public DateTime? AccessibleTill { get; set; }
 
@@ -37,4 +37,7 @@ public class User
     // ---------------- AUDIT ----------------
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+
+    // ---------------- RELATIONSHIPS ----------------
+    public virtual ICollection<DeviceToken> DeviceTokens { get; set; } = new List<DeviceToken>();
 }

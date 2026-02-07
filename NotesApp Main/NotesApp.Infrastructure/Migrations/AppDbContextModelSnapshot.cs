@@ -44,6 +44,8 @@ namespace NotesApp.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("UserId");
+
                     b.ToTable("DeviceTokens");
                 });
 
@@ -254,6 +256,22 @@ namespace NotesApp.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("NotesApp.Domain.Entities.DeviceToken", b =>
+                {
+                    b.HasOne("NotesApp.Domain.Entities.User", "User")
+                        .WithMany("DeviceTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("NotesApp.Domain.Entities.User", b =>
+                {
+                    b.Navigation("DeviceTokens");
                 });
 #pragma warning restore 612, 618
         }

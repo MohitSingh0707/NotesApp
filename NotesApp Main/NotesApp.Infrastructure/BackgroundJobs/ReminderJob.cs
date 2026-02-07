@@ -35,8 +35,11 @@ namespace NotesApp.Infrastructure.BackgroundJobs
             string noteTitle,
             ReminderType type)
         {
+            Console.WriteLine($"⚙️ JOB START: Processing reminder for NoteId: {noteId}, Type: {type} (Value: {(int)type}), To: {email}");
+            Console.WriteLine($"🔍 Flags Status -> InApp: {type.HasFlag(ReminderType.InApp)}, Email: {type.HasFlag(ReminderType.Email)}, Push: {type.HasFlag(ReminderType.Push)}");
+            
             // SYSTEM / LOCAL TIME (email display only)
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
 
             // 1️⃣ IN-APP NOTIFICATION (DB)
             if (type.HasFlag(ReminderType.InApp))

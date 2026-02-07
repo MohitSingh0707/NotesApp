@@ -55,11 +55,13 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 // --------------------
 // RateLimiting
 // --------------------
-builder.Services.AddRateLimiter(options => {
-    options.AddPolicy("LoginPolicy",context =>
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("LoginPolicy", context =>
     RateLimitPartition.GetFixedWindowLimiter(
         partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
-        factory: _ => new FixedWindowRateLimiterOptions{
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
             PermitLimit = 5,
             Window = TimeSpan.FromSeconds(1),
             QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
@@ -81,11 +83,14 @@ builder.Services.AddHangfire(config =>
         {
             CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
             SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
-            QueuePollInterval = TimeSpan.FromSeconds(15)
+            QueuePollInterval = TimeSpan.FromSeconds(2) // High precision polling
         });
 });
 
-builder.Services.AddHangfireServer();
+builder.Services.AddHangfireServer(options =>
+{
+    options.SchedulePollingInterval = TimeSpan.FromSeconds(2); // High precision polling
+});
 
 // --------------------
 // Swagger
@@ -117,7 +122,7 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
 
         // 🔥 SABSE IMPORTANT
-        ValidateLifetime = false,   
+        ValidateLifetime = false,
 
         ValidateIssuerSigningKey = true,
 

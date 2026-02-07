@@ -67,6 +67,7 @@ using Microsoft.Extensions.Configuration;
 
 var config = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
+    .AddEnvironmentVariables()
     .Build();
 
 var aiService = new OpenAiSummaryService(
@@ -75,11 +76,11 @@ var aiService = new OpenAiSummaryService(
 );
 
 // ✅ async RabbitMQ connection
-var connection = await RabbitMqConnection.CreateAsync();
+var connection = await RabbitMqConnection.CreateAsync(config);
 
 // ✅ async consumer startup
 var consumer = new SummaryRequestConsumer(aiService);
 await consumer.StartAsync(connection);
 
 Console.WriteLine("🚀 AI Summary Service is listening...");
-Console.ReadLine();
+await Task.Delay(Timeout.Infinite);

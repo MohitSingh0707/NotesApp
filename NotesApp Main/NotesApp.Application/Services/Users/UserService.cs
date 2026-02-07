@@ -6,6 +6,7 @@ using NotesApp.Application.DTOs.Auth;
 using NotesApp.Application.Interfaces.Files;
 using NotesApp.Application.Interfaces.Users;
 using NotesApp.Application.Interfaces.Auth;
+using NotesApp.Application.Interfaces.Push;
 
 namespace NotesApp.Application.Services.Users;
 
@@ -13,16 +14,19 @@ public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
     private readonly IFileStorageService _fileStorageService;
+    private readonly IDeviceTokenRepository _deviceTokenRepository;
     private readonly string _s3BaseUrl;
 
     public UserService(
         IUserRepository userRepository, 
         IConfiguration config,
-        IFileStorageService fileStorageService)
+        IFileStorageService fileStorageService,
+        IDeviceTokenRepository deviceTokenRepository)
     {
         _userRepository = userRepository;
         _s3BaseUrl = config["AWS:S3BaseUrl"]!;
         _fileStorageService = fileStorageService;
+        _deviceTokenRepository = deviceTokenRepository;
     }
 
     // ✅ GET CURRENT USER
@@ -45,6 +49,8 @@ public class UserService : IUserService
             ? (long)Math.Max(0, (user.AccessibleTill.Value - now).TotalSeconds)
             : 0;
 
+        var tokens = await _deviceTokenRepository.GetByUserAsync(userId);
+
         return new UserProfileDto
         {
             UserId = user.Id,
@@ -55,7 +61,8 @@ public class UserService : IUserService
             ProfileImageUrl = profilePath,
             IsCommonPasswordAvailable = !string.IsNullOrWhiteSpace(user.CommonPasswordHash),
             IsNotesUnlocked = isUnlocked,
-            RemainingAccessSeconds = remainingSeconds
+            RemainingAccessSeconds = remainingSeconds,
+            HasPushToken = tokens != null && tokens.Any()
         };
     }
 
@@ -170,11 +177,9 @@ public class UserService : IUserService
         if (user == null || user.IsDeleted)
             throw new NotFoundException("User not found");
 
-        // Upload to S3
-        var relativePath = await _fileStorageService.UploadProfileImageAsync(fileStream, contentType, userId);
+        // Upload to S3 (Now returns full URL)
+        var fullUrl = await _fileStorageService.UploadProfileImageAsync(fileStream, contentType, userId);
         
-        // Store full URL in DB
-        var fullUrl = _s3BaseUrl + relativePath;
         user.ProfileImagePath = fullUrl;
         user.UpdatedAt = DateTime.UtcNow;
 

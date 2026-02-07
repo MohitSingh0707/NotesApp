@@ -44,6 +44,7 @@ namespace NotesApp.API.Controllers.Reminders
             }
 
             var userId = User.GetUserId();
+            Console.WriteLine($"🔔 API HIT: SetReminder for NoteId: {request.NoteId}, UserId: {userId}, RemindAt: {request.RemindAt:yyyy-MM-dd HH:mm:ss}Z, Type: {request.Type}");
 
             if (User.IsGuest())
             {
@@ -53,13 +54,12 @@ namespace NotesApp.API.Controllers.Reminders
                 ));
             }
 
-            // SYSTEM TIME (local)
-            var reminderTime = DateTime.SpecifyKind(
-                request.RemindAt,
-                DateTimeKind.Local
-            );
-
-            var now = DateTime.Now;
+            // 🔥 TRUST INCOMING UTC
+            var reminderTime = DateTime.SpecifyKind(request.RemindAt, DateTimeKind.Utc);
+            var now = DateTime.UtcNow;
+            
+            var timeRemaining = reminderTime - now;
+            Console.WriteLine($"⏰ Scheduling: Requested={request.RemindAt}, UTC={reminderTime}, Now={now}, TRIGGER IN: {timeRemaining.TotalMinutes:F1} minutes");
             
             // Validate time is in the future (with buffer to account for network delay)
             if (reminderTime < now)
@@ -158,6 +158,7 @@ namespace NotesApp.API.Controllers.Reminders
                     throw new Exception("Hangfire returned null/empty job ID");
                 }
 
+                Console.WriteLine($"✅ Hangfire job scheduled: {jobId} for {reminderTime}");
                 reminder.JobId = jobId;
                 await _reminderRepository.UpdateAsync(reminder);
             }

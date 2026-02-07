@@ -9,6 +9,9 @@ c:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp.Domain\obj\Debug\net10.0\NotesApp
 c:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp.Domain\obj\Debug\net10.0\refint\NotesApp.Domain.dll
 c:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp.Domain\obj\Debug\net10.0\NotesApp.Domain.pdb
 c:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp.Domain\obj\Debug\net10.0\ref\NotesApp.Domain.dll
+C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.API\temp_build_out\NotesApp.Domain.deps.json
+C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.API\temp_build_out\NotesApp.Domain.dll
+C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.API\temp_build_out\NotesApp.Domain.pdb
 C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Domain\bin\Debug\net10.0\NotesApp.Domain.deps.json
 C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Domain\bin\Debug\net10.0\NotesApp.Domain.dll
 C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Domain\bin\Debug\net10.0\NotesApp.Domain.pdb
@@ -16,11 +19,8 @@ C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Domain\obj\Debug\ne
 C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Domain\obj\Debug\net10.0\NotesApp.Domain.AssemblyInfoInputs.cache
 C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Domain\obj\Debug\net10.0\NotesApp.Domain.AssemblyInfo.cs
 C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Domain\obj\Debug\net10.0\NotesApp.Domain.csproj.CoreCompileInputs.cache
+C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Domain\obj\Debug\net10.0\NotesApp.Domain.sourcelink.json
 C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Domain\obj\Debug\net10.0\NotesApp.Domain.dll
 C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Domain\obj\Debug\net10.0\refint\NotesApp.Domain.dll
 C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Domain\obj\Debug\net10.0\NotesApp.Domain.pdb
 C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Domain\obj\Debug\net10.0\ref\NotesApp.Domain.dll
-C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Domain\obj\Debug\net10.0\NotesApp.Domain.sourcelink.json
-C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.API\temp_build_out\NotesApp.Domain.deps.json
-C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.API\temp_build_out\NotesApp.Domain.dll
-C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.API\temp_build_out\NotesApp.Domain.pdb

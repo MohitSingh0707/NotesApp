@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: notesapp-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    restart: always
+
+  ai-summary-service:
+    build:
+      context: ./Ai-Summary(Microservices)/AI.Summary.Service
+      dockerfile: Dockerfile
+    container_name: ai-summary-service
+    environment:
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=guest
+      - RabbitMQ__Password=guest
+      - AI__ApiKey=YOUR_AI_API_KEY_HERE
+      - AI__Model=llama-3.1-8b-instant
+    depends_on:
+      - rabbitmq
+    restart: always
+
+  notes-api:
+    build:
+      context: ./NotesApp Main
+      dockerfile: Dockerfile
+    container_name: notes-api
+    ports:
+      - "5278:5278"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - RabbitMQ__Host=rabbitmq
+      - ConnectionStrings__DefaultConnection=Server=172.26.96.1,1433;Database=NotesApp;User Id=sa;Password=YOUR_DB_PASSWORD_HERE;TrustServerCertificate=True
+    depends_on:
+      - rabbitmq
+    restart: always

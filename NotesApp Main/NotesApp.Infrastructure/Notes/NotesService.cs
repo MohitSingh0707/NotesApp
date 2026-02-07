@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using NotesApp.Application.DTOs.Notes;
 using NotesApp.Application.Interfaces.Notes;
@@ -10,6 +12,8 @@ using NotesApp.Infrastructure.Messaging;
 using NotesApp.Application.Common.Exceptions;
 using System.ComponentModel.DataAnnotations;
 using NotesApp.Application.DTOs.Common;
+using NotesApp.Application.Interfaces.Files;
+using Microsoft.AspNetCore.Http;
 
 namespace NotesApp.Infrastructure.Services.Notes
 {
@@ -17,13 +21,19 @@ namespace NotesApp.Infrastructure.Services.Notes
     {
         private readonly AppDbContext _context;
         private readonly AiSummaryRequestPublisher _aiPublisher;
+        private readonly IFileStorageService _fileStorageService;
+        private readonly string _s3BaseUrl;
 
         public NoteService(
             AppDbContext context,
-            AiSummaryRequestPublisher aiPublisher)
+            AiSummaryRequestPublisher aiPublisher,
+            IFileStorageService fileStorageService,
+            IConfiguration config)
         {
             _context = context;
             _aiPublisher = aiPublisher;
+            _fileStorageService = fileStorageService;
+            _s3BaseUrl = config["AWS:S3BaseUrl"] ?? throw new Exception("AWS:S3BaseUrl is missing");
         }
 
         // ================= CLEANUP =================
@@ -49,29 +59,26 @@ namespace NotesApp.Infrastructure.Services.Notes
             var cleanTitle = request.Title?.Trim();
             var cleanContent = request.Content?.Trim();
 
-            // Validate array sizes
-            if (request.FilePaths != null && request.FilePaths.Count > 10)
-                throw new ValidationException("Maximum 10 files allowed per note");
-            
-            if (request.ImagePaths != null && request.ImagePaths.Count > 10)
-                throw new ValidationException("Maximum 10 images allowed per note");
+            // Process File and Image paths (prepend S3 URL and handle empty lists)
+            var filePaths = ProcessPaths(request.FilePaths) ?? new List<string>();
+            var imagePaths = ProcessPaths(request.ImagePaths) ?? new List<string>();
 
-            // Validate URLs for file and image paths
-            if (request.FilePaths != null)
+            // Handle direct uploads if any
+            if (request.NewFiles != null && request.NewFiles.Any())
             {
-                foreach (var path in request.FilePaths)
+                foreach (var file in request.NewFiles)
                 {
-                    if (!IsValidS3Path(path))
-                        throw new ValidationException($"Invalid file path: {path}");
+                    var fullUrl = await _fileStorageService.SaveFileAsync(file);
+                    filePaths.Add(fullUrl);
                 }
             }
 
-            if (request.ImagePaths != null)
+            if (request.NewImages != null && request.NewImages.Any())
             {
-                foreach (var path in request.ImagePaths)
+                foreach (var image in request.NewImages)
                 {
-                    if (!IsValidS3Path(path))
-                        throw new ValidationException($"Invalid image path: {path}");
+                    var fullUrl = await _fileStorageService.SaveImageAsync(image);
+                    imagePaths.Add(fullUrl);
                 }
             }
 
@@ -115,8 +122,8 @@ namespace NotesApp.Infrastructure.Services.Notes
                 Title = cleanTitle,
                 Content = cleanContent,
                 BackgroundColor = request.BackgroundColor,
-                FilePaths = request.FilePaths,
-                ImagePaths = request.ImagePaths,
+                FilePaths = filePaths,
+                ImagePaths = imagePaths,
                 IsPasswordProtected = request.IsPasswordProtected,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -345,8 +352,32 @@ namespace NotesApp.Infrastructure.Services.Notes
 
             note.Title = cleanTitle;
             note.Content = cleanContent;
-            note.FilePaths = request.FilePaths;
-            note.ImagePaths = request.ImagePaths;
+            
+            // Process existing paths
+            var filePaths = ProcessPaths(request.FilePaths) ?? new List<string>();
+            var imagePaths = ProcessPaths(request.ImagePaths) ?? new List<string>();
+
+            // Handle direct uploads if any
+            if (request.NewFiles != null && request.NewFiles.Any())
+            {
+                foreach (var file in request.NewFiles)
+                {
+                    var fullUrl = await _fileStorageService.SaveFileAsync(file);
+                    filePaths.Add(fullUrl);
+                }
+            }
+
+            if (request.NewImages != null && request.NewImages.Any())
+            {
+                foreach (var image in request.NewImages)
+                {
+                    var fullUrl = await _fileStorageService.SaveImageAsync(image);
+                    imagePaths.Add(fullUrl);
+                }
+            }
+
+            note.FilePaths = filePaths;
+            note.ImagePaths = imagePaths;
             note.BackgroundColor = request.BackgroundColor;
             note.UpdatedAt = now;
 
@@ -444,19 +475,25 @@ namespace NotesApp.Infrastructure.Services.Notes
                 .FirstOrDefaultAsync(n => n.Id == noteId && !n.IsDeleted);
         }
 
-        // ================= VALIDATION HELPERS =================
-        private static bool IsValidS3Path(string path)
+        // ================= PATH HELPERS =================
+        private List<string>? ProcessPaths(List<string>? paths)
         {
-            if (string.IsNullOrWhiteSpace(path)) return false;
-            
-            // Must start with http:// or https://
-            if (!path.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && 
-                !path.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-                return false;
+            if (paths == null || !paths.Any()) return null;
 
-            // Basic URL validation
-            return Uri.TryCreate(path, UriKind.Absolute, out var uri) && 
-                   (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+            return paths
+                .Where(p => !string.IsNullOrWhiteSpace(p))
+                .Select(p => {
+                    var trimmed = p.Trim();
+                    if (trimmed.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                        return trimmed;
+                    
+                    // Handle relative path by prepending S3BaseUrl
+                    // Ensure we don't end up with double slashes
+                    var baseUrl = _s3BaseUrl.TrimEnd('/');
+                    var relativePath = trimmed.TrimStart('/');
+                    return $"{baseUrl}/{relativePath}";
+                })
+                .ToList();
         }
 
         private static bool ContainsHtmlTags(string input)

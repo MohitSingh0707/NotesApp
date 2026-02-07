@@ -11,20 +11,19 @@ namespace NotesApp.Application.Validators.Notes
                 .MaximumLength(200);
 
             RuleFor(x => x)
-                .Must(HaveContent)
-                .WithMessage("Note must have at least a title, content, file, or image");
+                .Must(HaveBasicInfo)
+                .WithMessage("Note must have at least a Title or Content.");
 
             RuleFor(x => x)
                 .Must(HaveValidTimeRange)
                 .WithMessage("AccessibleFrom must be earlier than AccessibleTill");
         }
 
-        private bool HaveContent(CreateNoteRequest request)
+        private bool HaveBasicInfo(CreateNoteRequest request)
         {
+            // The user specifically wants Title or Content to be mandatory
             return !string.IsNullOrWhiteSpace(request.Title)
-                || !string.IsNullOrWhiteSpace(request.Content)
-                || (request.FilePaths != null && request.FilePaths.Any())
-                || (request.ImagePaths != null && request.ImagePaths.Any());
+                || !string.IsNullOrWhiteSpace(request.Content);
         }
 
         private bool HaveValidTimeRange(CreateNoteRequest request)

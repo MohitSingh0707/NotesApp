@@ -84,18 +84,34 @@ public class AuthController : ControllerBase
             ? _config["AWS:DefaultProfileImage"]
             : user.ProfileImagePath;
 
-        var response = new AuthResponseDto
+        var now = DateTime.UtcNow;
+        var isUnlocked = user.AccessibleTill.HasValue && user.AccessibleTill > now;
+        var remainingSeconds = isUnlocked ? (long)(user.AccessibleTill!.Value - now).TotalSeconds : 0;
+
+        // 🔥 REGISTER FCM TOKEN (IF PROVIDED)
+        if (!string.IsNullOrEmpty(request.FcmToken) && !string.IsNullOrEmpty(request.Platform))
+        {
+            await _authService.RegisterDeviceTokenAsync(user.Id, request.FcmToken, request.Platform);
+        }
+
+        var isPushTokenSet = !string.IsNullOrEmpty(request.FcmToken) || 
+                             (await _authService.IsPushTokenRegisteredAsync(user.Id));
+
+        var finalResponse = new AuthResponseDto
         {
             UserId = user.Id,
             Email = user.Email ?? "",
             UserName = user.UserName ?? "",
             Token = token,
-            ProfileImageUrl =
-                _config["AWS:S3BaseUrl"] + profilePath
+            ProfileImageUrl = _config["AWS:S3BaseUrl"] + profilePath,
+            IsCommonPasswordSet = !string.IsNullOrEmpty(user.CommonPasswordHash),
+            IsNotesUnlocked = isUnlocked,
+            RemainingAccessSeconds = remainingSeconds,
+            HasPushToken = isPushTokenSet
         };
 
         return Ok(SuccessResponse.Create(
-            data: response,
+            data: finalResponse,
             message: "Google login successful"
         ));
     }

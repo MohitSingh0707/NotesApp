@@ -23,19 +23,25 @@ namespace NotesApp.Infrastructure.Push
                 return;
             }
 
-            using var stream = new FileStream(
-                firebaseConfigPath,
-                FileMode.Open,
-                FileAccess.Read);
-
-            var credential = GoogleCredential
-                .FromStream(stream)
-                .CreateScoped("https://www.googleapis.com/auth/firebase.messaging");
-
-            FirebaseApp.Create(new AppOptions
+            try
             {
-                Credential = credential
-            });
+                using var stream = new FileStream(
+                    firebaseConfigPath,
+                    FileMode.Open,
+                    FileAccess.Read);
+
+                var credential = GoogleCredential.FromStream(stream);
+
+                FirebaseApp.Create(new AppOptions
+                {
+                    Credential = credential
+                });
+                System.Console.WriteLine("✅ Firebase Admin SDK initialized successfully.");
+            }
+            catch (Exception ex)
+            {
+                System.Console.WriteLine($"❌ Firebase Initialization failed: {ex.Message}");
+            }
         }
     }
 }

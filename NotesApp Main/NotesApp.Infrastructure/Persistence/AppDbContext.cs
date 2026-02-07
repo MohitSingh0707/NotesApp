@@ -65,6 +65,12 @@ namespace NotesApp.Infrastructure.Persistence
 
                         entity.Property(x => x.CreatedAt)
                         .IsRequired();
+
+                        // RELATIONSHIP
+                        entity.HasOne(x => x.User)
+                              .WithMany(u => u.DeviceTokens)
+                              .HasForeignKey(x => x.UserId)
+                              .OnDelete(DeleteBehavior.Cascade);
                   });
 
 

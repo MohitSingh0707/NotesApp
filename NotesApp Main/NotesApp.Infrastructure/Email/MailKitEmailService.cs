@@ -51,18 +51,19 @@ namespace NotesApp.Infrastructure.Email
                 var connectionOptions = (port == 587) ? SecureSocketOptions.StartTls : SecureSocketOptions.Auto;
                 
                 await client.ConnectAsync(host, port, connectionOptions);
-                Console.WriteLine("✅ Connected to SMTP server");
-
-                if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
-                {
-                    await client.AuthenticateAsync(username, password);
-                    Console.WriteLine("✅ Authenticated with SMTP server");
-                }
-                
-                await client.SendAsync(message);
-                await client.DisconnectAsync(true);
-
-                Console.WriteLine($"✅ EMAIL SENT SUCCESSFULLY TO: {to}");
+                Console.WriteLine($"✅ SMTP Connected: {host}:{port} using {connectionOptions}");
+ 
+                 if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
+                 {
+                     await client.AuthenticateAsync(username, password);
+                     Console.WriteLine("✅ SMTP Authenticated successfully");
+                 }
+                 
+                 await client.SendAsync(message);
+                 Console.WriteLine($"✅ SMTP Message sent to {to}");
+                 await client.DisconnectAsync(true);
+ 
+                 Console.WriteLine($"🎉 EMAIL DISPATCH COMPLETED: {to}");
             }
             catch (Exception ex)
             {

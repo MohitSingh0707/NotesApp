@@ -1,0 +1,6 @@
+C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Infrastructure\obj\Release\net10.0\NotesApp.Infrastructure.csproj.AssemblyReference.cache
+C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Infrastructure\obj\Release\net10.0\NotesApp.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Infrastructure\obj\Release\net10.0\NotesApp.Infrastructure.AssemblyInfoInputs.cache
+C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Infrastructure\obj\Release\net10.0\NotesApp.Infrastructure.AssemblyInfo.cs
+C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Infrastructure\obj\Release\net10.0\NotesApp.Infrastructure.csproj.CoreCompileInputs.cache
+C:\Users\HP\OneDrive\Desktop\NotesApp\NotesApp Main\NotesApp.Infrastructure\obj\Release\net10.0\NotesApp.Infrastructure.sourcelink.json
